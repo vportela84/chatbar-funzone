@@ -12,22 +12,26 @@ interface Message {
   timestamp: Date;
 }
 
-interface ChatRoomProps {
+interface Profile {
+  name: string;
+  phone: string;
   tableId: string;
-  profile: {
-    name: string;
-    phone: string;
-  };
 }
 
-const ChatRoom = ({ tableId, profile }: ChatRoomProps) => {
+interface ChatRoomProps {
+  tableId: string;
+  profile: Profile;
+  targetProfile: Profile;
+}
+
+const ChatRoom = ({ tableId, profile, targetProfile }: ChatRoomProps) => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
-      text: "Welcome to the bar chat!",
-      sender: "Bar Staff",
-      table: "STAFF",
+      text: `Iniciando conversa com ${targetProfile.name} da mesa ${targetProfile.tableId}`,
+      sender: "Sistema",
+      table: "SYSTEM",
       timestamp: new Date(),
     },
   ]);
@@ -49,7 +53,16 @@ const ChatRoom = ({ tableId, profile }: ChatRoomProps) => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-6rem)] bg-bar-bg rounded-lg p-4 animate-fadeIn">
+    <div className="flex flex-col h-[calc(100vh-12rem)] bg-bar-bg rounded-lg p-4 animate-fadeIn">
+      <div className="bg-black/20 p-3 rounded-lg mb-4">
+        <h3 className="text-lg font-semibold text-primary">
+          Chat com {targetProfile.name}
+        </h3>
+        <p className="text-sm text-bar-text/80">
+          Mesa {targetProfile.tableId}
+        </p>
+      </div>
+
       <div className="flex-1 overflow-y-auto space-y-4 p-4">
         {messages.map((msg) => (
           <div
@@ -62,11 +75,13 @@ const ChatRoom = ({ tableId, profile }: ChatRoomProps) => {
               className={`max-w-[80%] rounded-lg p-3 ${
                 msg.sender === profile.name
                   ? "bg-primary text-primary-foreground"
+                  : msg.sender === "Sistema"
+                  ? "bg-black/20 text-bar-text"
                   : "bg-secondary text-secondary-foreground"
               }`}
             >
               <div className="text-sm opacity-80">
-                {msg.sender} (Table {msg.table})
+                {msg.sender} {msg.table !== "SYSTEM" && `(Mesa ${msg.table})`}
               </div>
               <div className="mt-1">{msg.text}</div>
             </div>

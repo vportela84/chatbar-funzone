@@ -3,18 +3,26 @@ import React, { useState } from 'react';
 import QRScanner from '@/components/QRScanner';
 import ProfileSetup from '@/components/ProfileSetup';
 import ChatRoom from '@/components/ChatRoom';
+import Dashboard from '@/components/Dashboard';
 
 type Profile = {
   name: string;
   phone: string;
-} | null;
+  tableId: string;
+};
 
-type AppState = 'SCAN' | 'PROFILE' | 'CHAT';
+type AppState = 'SCAN' | 'PROFILE' | 'DASHBOARD' | 'CHAT';
 
 const Index = () => {
   const [state, setState] = useState<AppState>('SCAN');
   const [tableId, setTableId] = useState<string | null>(null);
-  const [profile, setProfile] = useState<Profile>(null);
+  const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
+  const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
+  const [profiles, setProfiles] = useState<Profile[]>([
+    // Exemplo de perfis para teste
+    { name: "João", phone: "11999999999", tableId: "TABLE-456" },
+    { name: "Maria", phone: "11988888888", tableId: "TABLE-789" },
+  ]);
 
   const handleScan = (scannedTableId: string) => {
     setTableId(scannedTableId);
@@ -22,8 +30,23 @@ const Index = () => {
   };
 
   const handleProfileComplete = (profileData: { name: string; phone: string }) => {
-    setProfile(profileData);
+    const newProfile = {
+      ...profileData,
+      tableId: tableId!,
+    };
+    setCurrentProfile(newProfile);
+    setProfiles([...profiles, newProfile]);
+    setState('DASHBOARD');
+  };
+
+  const handleSelectProfile = (profile: Profile) => {
+    setSelectedProfile(profile);
     setState('CHAT');
+  };
+
+  const handleBackToDashboard = () => {
+    setSelectedProfile(null);
+    setState('DASHBOARD');
   };
 
   return (
@@ -42,8 +65,33 @@ const Index = () => {
           <ProfileSetup onComplete={handleProfileComplete} tableId={tableId} />
         )}
 
-        {state === 'CHAT' && tableId && profile && (
-          <ChatRoom tableId={tableId} profile={profile} />
+        {state === 'DASHBOARD' && currentProfile && (
+          <>
+            <div className="mb-6 text-center">
+              <h2 className="text-2xl font-bold text-bar-text mb-2">Pessoas no Bar</h2>
+              <p className="text-bar-text/80">Clique em um perfil para iniciar uma conversa</p>
+            </div>
+            <Dashboard 
+              profiles={profiles.filter(p => p.tableId !== currentProfile.tableId)} 
+              onSelectProfile={handleSelectProfile} 
+            />
+          </>
+        )}
+
+        {state === 'CHAT' && currentProfile && selectedProfile && (
+          <div>
+            <button 
+              onClick={handleBackToDashboard}
+              className="mb-4 text-primary hover:text-primary/80 transition-colors"
+            >
+              ← Voltar para o Dashboard
+            </button>
+            <ChatRoom 
+              tableId={currentProfile.tableId} 
+              profile={currentProfile}
+              targetProfile={selectedProfile}
+            />
+          </div>
         )}
       </div>
     </div>
