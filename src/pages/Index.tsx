@@ -38,7 +38,13 @@ const Index = () => {
     
     setCurrentProfile(newProfile);
     setProfiles(prevProfiles => {
-      const updatedProfiles = [...prevProfiles, newProfile];
+      // Adiciona alguns perfis de teste junto com o novo perfil
+      const updatedProfiles = [
+        ...prevProfiles,
+        newProfile,
+        { name: "João", phone: "11999999999", tableId: "TABLE-456" },
+        { name: "Maria", phone: "11988888888", tableId: "TABLE-789" },
+      ];
       console.log('Perfis atualizados:', updatedProfiles);
       return updatedProfiles;
     });
@@ -60,11 +66,18 @@ const Index = () => {
     setState('DASHBOARD');
   };
 
+  // Função auxiliar para filtrar perfis
+  const getOtherProfiles = () => {
+    if (!currentProfile) return [];
+    return profiles.filter(p => p.tableId !== currentProfile.tableId);
+  };
+
   console.log('Estado atual:', {
     state,
     currentProfile,
     profiles,
-    tableId
+    tableId,
+    filteredProfiles: getOtherProfiles()
   });
 
   return (
@@ -90,7 +103,7 @@ const Index = () => {
               <p className="text-bar-text/80">Clique em um perfil para iniciar uma conversa</p>
             </div>
             <Dashboard 
-              profiles={profiles.filter(p => p.tableId !== currentProfile.tableId)}
+              profiles={getOtherProfiles()}
               onSelectProfile={handleSelectProfile} 
             />
           </>
