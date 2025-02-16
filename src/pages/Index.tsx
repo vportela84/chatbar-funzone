@@ -20,10 +20,7 @@ const Index = () => {
   const [tableId, setTableId] = useState<string | null>(null);
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
-  const [profiles, setProfiles] = useState<Profile[]>([
-    { name: "João", phone: "11999999999", tableId: "TABLE-456" },
-    { name: "Maria", phone: "11988888888", tableId: "TABLE-789" },
-  ]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const { toast } = useToast();
 
   const handleScan = (scannedTableId: string) => {
@@ -36,8 +33,16 @@ const Index = () => {
       ...profileData,
       tableId: tableId!,
     };
+    
+    console.log('Novo perfil criado:', newProfile);
+    
     setCurrentProfile(newProfile);
-    setProfiles(prevProfiles => [...prevProfiles, newProfile]);
+    setProfiles(prevProfiles => {
+      const updatedProfiles = [...prevProfiles, newProfile];
+      console.log('Perfis atualizados:', updatedProfiles);
+      return updatedProfiles;
+    });
+    
     setState('DASHBOARD');
     toast({
       title: "Perfil criado!",
@@ -54,6 +59,13 @@ const Index = () => {
     setSelectedProfile(null);
     setState('DASHBOARD');
   };
+
+  console.log('Estado atual:', {
+    state,
+    currentProfile,
+    profiles,
+    tableId
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-bar-bg to-black text-bar-text p-6">
@@ -78,7 +90,7 @@ const Index = () => {
               <p className="text-bar-text/80">Clique em um perfil para iniciar uma conversa</p>
             </div>
             <Dashboard 
-              profiles={profiles.filter(p => p.tableId !== currentProfile.tableId)} 
+              profiles={profiles.filter(p => p.tableId !== currentProfile.tableId)}
               onSelectProfile={handleSelectProfile} 
             />
           </>
