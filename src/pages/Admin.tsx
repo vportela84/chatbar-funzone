@@ -5,7 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { QrCode, Users } from 'lucide-react';
+import { QrCode, Users, X } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 interface Bar {
   id: string;
@@ -15,12 +22,29 @@ interface Bar {
   activeUsers: number;
 }
 
+interface ActiveUser {
+  name: string;
+  tableId: string;
+  phone: string;
+  photo?: string;
+}
+
 const Admin = () => {
   const [bars, setBars] = useState<Bar[]>([]);
   const [selectedBar, setSelectedBar] = useState<Bar | null>(null);
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
+  const [showQRCode, setShowQRCode] = useState(false);
+  const [selectedQRCode, setSelectedQRCode] = useState<string>('');
   const { toast } = useToast();
+
+  // Simulating active users for demo purposes
+  const [activeUsers] = useState<Record<string, ActiveUser[]>>({
+    "1": [
+      { name: "João", tableId: "TABLE-1", phone: "11999999999", photo: undefined },
+      { name: "Maria", tableId: "TABLE-2", phone: "11988888888", photo: undefined },
+    ],
+  });
 
   const handleCreateBar = (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +62,12 @@ const Admin = () => {
       title: "Bar cadastrado com sucesso!",
       description: "O QR Code foi gerado automaticamente.",
     });
+  };
+
+  const handleShowQRCode = (qrCode: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedQRCode(qrCode);
+    setShowQRCode(true);
   };
 
   return (
@@ -63,7 +93,7 @@ const Admin = () => {
                     id="name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="bg-black/20 border-primary/20"
+                    className="bg-black/20 border-primary/20 text-white placeholder:text-white/50"
                     placeholder="Digite o nome do bar"
                   />
                 </div>
@@ -73,7 +103,7 @@ const Admin = () => {
                     id="address"
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
-                    className="bg-black/20 border-primary/20"
+                    className="bg-black/20 border-primary/20 text-white placeholder:text-white/50"
                     placeholder="Digite o endereço completo"
                   />
                 </div>
@@ -96,7 +126,9 @@ const Admin = () => {
                     <CardTitle className="text-bar-text">{bar.name}</CardTitle>
                     <div className="flex items-center space-x-2 text-primary/80">
                       <Users className="w-4 h-4" />
-                      <span className="text-sm">{bar.activeUsers} online</span>
+                      <span className="text-sm">
+                        {activeUsers[bar.id]?.length || 0} online
+                      </span>
                     </div>
                   </div>
                   <CardDescription>{bar.address}</CardDescription>
@@ -105,11 +137,7 @@ const Admin = () => {
                   <Button 
                     variant="outline" 
                     className="text-primary border-primary/20"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // Aqui você pode implementar a lógica para mostrar o QR Code
-                      console.log('QR Code:', bar.qrCode);
-                    }}
+                    onClick={(e) => handleShowQRCode(bar.qrCode, e)}
                   >
                     <QrCode className="w-4 h-4 mr-2" />
                     Ver QR Code
@@ -126,7 +154,7 @@ const Admin = () => {
           </div>
         </div>
 
-        {/* Modal ou seção para mostrar detalhes do bar selecionado */}
+        {/* Detalhes do bar selecionado */}
         {selectedBar && (
           <Card className="mt-8 bg-bar-bg border-primary/20">
             <CardHeader>
@@ -137,22 +165,64 @@ const Admin = () => {
                   onClick={() => setSelectedBar(null)}
                   className="text-bar-text/60 hover:text-bar-text"
                 >
-                  Fechar
+                  <X className="w-4 h-4" />
                 </Button>
               </div>
               <CardDescription>{selectedBar.address}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="p-4 bg-black/20 rounded-lg">
-                <h3 className="text-lg font-semibold text-primary mb-2">Clientes Ativos</h3>
-                {/* Aqui você pode implementar a lista de clientes ativos */}
-                <p className="text-bar-text/60">
-                  Implementar lista de clientes ativos...
-                </p>
+                <h3 className="text-lg font-semibold text-primary mb-4">Clientes Ativos</h3>
+                <div className="space-y-4">
+                  {activeUsers[selectedBar.id]?.map((user, index) => (
+                    <div 
+                      key={index}
+                      className="flex items-center justify-between p-3 bg-black/30 rounded-lg"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
+                          <Users className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-bar-text">{user.name}</p>
+                          <p className="text-sm text-bar-text/60">Mesa: {user.tableId}</p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-bar-text/60">{user.phone}</p>
+                    </div>
+                  ))}
+                  {!activeUsers[selectedBar.id] && (
+                    <p className="text-bar-text/60 text-center">
+                      Nenhum cliente ativo no momento
+                    </p>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
         )}
+
+        {/* Dialog do QR Code */}
+        <Dialog open={showQRCode} onOpenChange={setShowQRCode}>
+          <DialogContent className="bg-bar-bg border-primary/20">
+            <DialogHeader>
+              <DialogTitle className="text-primary">QR Code do Bar</DialogTitle>
+              <DialogDescription>
+                Compartilhe este QR Code com seus clientes
+              </DialogDescription>
+            </DialogHeader>
+            <div className="p-6 bg-white rounded-lg">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(selectedQRCode)}`}
+                alt="QR Code"
+                className="mx-auto"
+              />
+            </div>
+            <p className="text-center text-sm text-bar-text/60 mt-2">
+              {selectedQRCode}
+            </p>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
