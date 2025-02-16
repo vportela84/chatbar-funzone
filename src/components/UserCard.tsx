@@ -2,15 +2,17 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { UserRound, MessagesSquare } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface UserCardProps {
   name: string;
   phone: string;
   tableId: string;
+  photo?: string;
   onClick: () => void;
 }
 
-const UserCard = ({ name, phone, tableId, onClick }: UserCardProps) => {
+const UserCard = ({ name, phone, tableId, photo, onClick }: UserCardProps) => {
   return (
     <Card 
       onClick={onClick}
@@ -18,8 +20,13 @@ const UserCard = ({ name, phone, tableId, onClick }: UserCardProps) => {
     >
       <CardHeader className="space-y-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <UserRound className="w-5 h-5 text-primary" />
+          <div className="flex items-center space-x-3">
+            <Avatar className="w-10 h-10 border-2 border-primary/20">
+              <AvatarImage src={photo} />
+              <AvatarFallback>
+                <UserRound className="w-5 h-5 text-primary" />
+              </AvatarFallback>
+            </Avatar>
             <CardTitle className="text-bar-text">{name}</CardTitle>
           </div>
           <MessagesSquare className="w-5 h-5 text-secondary" />

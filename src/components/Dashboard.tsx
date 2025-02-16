@@ -6,6 +6,7 @@ interface Profile {
   name: string;
   phone: string;
   tableId: string;
+  photo?: string;
 }
 
 interface DashboardProps {
@@ -22,6 +23,7 @@ const Dashboard = ({ profiles, onSelectProfile }: DashboardProps) => {
           name={profile.name}
           phone={profile.phone}
           tableId={profile.tableId}
+          photo={profile.photo}
           onClick={() => onSelectProfile(profile)}
         />
       ))}
