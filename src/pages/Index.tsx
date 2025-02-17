@@ -37,11 +37,24 @@ const Index = () => {
     
     console.log('Novo perfil criado:', newProfile);
     
-    // Atualiza o perfil atual
-    setCurrentProfile(newProfile);
+    // Adiciona o novo perfil à lista de perfis primeiro
+    setProfiles(prevProfiles => {
+      const updatedProfiles = [...prevProfiles];
+      const existingProfileIndex = updatedProfiles.findIndex(p => p.tableId === newProfile.tableId);
+      
+      if (existingProfileIndex >= 0) {
+        // Atualiza o perfil existente
+        updatedProfiles[existingProfileIndex] = newProfile;
+      } else {
+        // Adiciona novo perfil
+        updatedProfiles.push(newProfile);
+      }
+      
+      return updatedProfiles;
+    });
     
-    // Adiciona o novo perfil à lista de perfis
-    setProfiles(prevProfiles => [...prevProfiles, newProfile]);
+    // Depois atualiza o perfil atual
+    setCurrentProfile(newProfile);
     
     setState('DASHBOARD');
     toast({
@@ -61,9 +74,8 @@ const Index = () => {
   };
 
   const getOtherProfiles = () => {
-    if (!currentProfile) return [];
     // Retorna todos os perfis exceto o perfil atual
-    return profiles.filter(p => p.tableId !== currentProfile.tableId);
+    return profiles.filter(profile => profile.tableId !== currentProfile?.tableId);
   };
 
   console.log('Estado atual:', {
@@ -97,7 +109,7 @@ const Index = () => {
               <p className="text-bar-text/80">Clique em um perfil para iniciar uma conversa</p>
             </div>
             <Dashboard 
-              profiles={getOtherProfiles()}
+              profiles={profiles}
               onSelectProfile={handleSelectProfile} 
             />
           </>
