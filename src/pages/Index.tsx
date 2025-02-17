@@ -37,16 +37,11 @@ const Index = () => {
     
     console.log('Novo perfil criado:', newProfile);
     
-    // Primeiro atualize o perfil atual
+    // Atualiza o perfil atual
     setCurrentProfile(newProfile);
-
-    // Depois adicione os perfis de exemplo junto com o novo perfil
-    const exampleProfiles = [
-      { name: "João", phone: "11999999999", tableId: "TABLE-456", interest: "all" },
-      { name: "Maria", phone: "11988888888", tableId: "TABLE-789", interest: "men" }
-    ];
     
-    setProfiles(exampleProfiles);
+    // Adiciona o novo perfil à lista de perfis
+    setProfiles(prevProfiles => [...prevProfiles, newProfile]);
     
     setState('DASHBOARD');
     toast({
@@ -67,7 +62,7 @@ const Index = () => {
 
   const getOtherProfiles = () => {
     if (!currentProfile) return [];
-    // Retorna apenas os perfis de exemplo, excluindo o perfil atual
+    // Retorna todos os perfis exceto o perfil atual
     return profiles.filter(p => p.tableId !== currentProfile.tableId);
   };
 
