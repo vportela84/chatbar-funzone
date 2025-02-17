@@ -9,10 +9,22 @@ interface UserCardProps {
   phone: string;
   tableId: string;
   photo?: string;
+  interest: string;
   onClick: () => void;
 }
 
-const UserCard = ({ name, phone, tableId, photo, onClick }: UserCardProps) => {
+const UserCard = ({ name, phone, tableId, photo, interest, onClick }: UserCardProps) => {
+  const getInterestText = (interest: string) => {
+    switch (interest) {
+      case 'men':
+        return 'Interesse em homens';
+      case 'women':
+        return 'Interesse em mulheres';
+      default:
+        return 'Interesse em todos';
+    }
+  };
+
   return (
     <Card 
       onClick={onClick}
@@ -34,6 +46,7 @@ const UserCard = ({ name, phone, tableId, photo, onClick }: UserCardProps) => {
         <CardDescription className="text-bar-text/80">
           <div>Mesa: {tableId}</div>
           {phone && <div>Telefone: {phone}</div>}
+          <div>{getInterestText(interest)}</div>
         </CardDescription>
       </CardHeader>
     </Card>
