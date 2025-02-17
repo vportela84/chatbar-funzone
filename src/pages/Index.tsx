@@ -21,10 +21,7 @@ const Index = () => {
   const [tableId, setTableId] = useState<string | null>(null);
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
-  const [profiles, setProfiles] = useState<Profile[]>([
-    { name: "João", phone: "11999999999", tableId: "TABLE-456", interest: "all" },
-    { name: "Maria", phone: "11988888888", tableId: "TABLE-789", interest: "men" }
-  ]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const { toast } = useToast();
 
   const handleScan = (scannedTableId: string) => {
@@ -40,12 +37,16 @@ const Index = () => {
     
     console.log('Novo perfil criado:', newProfile);
     
+    // Primeiro atualize o perfil atual
     setCurrentProfile(newProfile);
-    setProfiles(prevProfiles => {
-      const updatedProfiles = [...prevProfiles, newProfile];
-      console.log('Perfis atualizados:', updatedProfiles);
-      return updatedProfiles;
-    });
+
+    // Depois adicione os perfis de exemplo junto com o novo perfil
+    const exampleProfiles = [
+      { name: "João", phone: "11999999999", tableId: "TABLE-456", interest: "all" },
+      { name: "Maria", phone: "11988888888", tableId: "TABLE-789", interest: "men" }
+    ];
+    
+    setProfiles(exampleProfiles);
     
     setState('DASHBOARD');
     toast({
@@ -66,6 +67,7 @@ const Index = () => {
 
   const getOtherProfiles = () => {
     if (!currentProfile) return [];
+    // Retorna apenas os perfis de exemplo, excluindo o perfil atual
     return profiles.filter(p => p.tableId !== currentProfile.tableId);
   };
 
