@@ -11,6 +11,7 @@ type Profile = {
   phone: string;
   tableId: string;
   photo?: string;
+  interest: string;
 };
 
 type AppState = 'SCAN' | 'PROFILE' | 'DASHBOARD' | 'CHAT';
@@ -20,7 +21,10 @@ const Index = () => {
   const [tableId, setTableId] = useState<string | null>(null);
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
-  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([
+    { name: "João", phone: "11999999999", tableId: "TABLE-456", interest: "all" },
+    { name: "Maria", phone: "11988888888", tableId: "TABLE-789", interest: "men" }
+  ]);
   const { toast } = useToast();
 
   const handleScan = (scannedTableId: string) => {
@@ -28,7 +32,7 @@ const Index = () => {
     setState('PROFILE');
   };
 
-  const handleProfileComplete = (profileData: { name: string; phone: string; photo?: string }) => {
+  const handleProfileComplete = (profileData: { name: string; phone: string; photo?: string; interest: string }) => {
     const newProfile = {
       ...profileData,
       tableId: tableId!,
@@ -38,13 +42,7 @@ const Index = () => {
     
     setCurrentProfile(newProfile);
     setProfiles(prevProfiles => {
-      // Adiciona alguns perfis de teste junto com o novo perfil
-      const updatedProfiles = [
-        ...prevProfiles,
-        newProfile,
-        { name: "João", phone: "11999999999", tableId: "TABLE-456" },
-        { name: "Maria", phone: "11988888888", tableId: "TABLE-789" },
-      ];
+      const updatedProfiles = [...prevProfiles, newProfile];
       console.log('Perfis atualizados:', updatedProfiles);
       return updatedProfiles;
     });
@@ -66,7 +64,6 @@ const Index = () => {
     setState('DASHBOARD');
   };
 
-  // Função auxiliar para filtrar perfis
   const getOtherProfiles = () => {
     if (!currentProfile) return [];
     return profiles.filter(p => p.tableId !== currentProfile.tableId);
