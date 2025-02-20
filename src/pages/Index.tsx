@@ -64,29 +64,47 @@ const Index = () => {
   };
 
   const handleProfileComplete = async (profileData: { name: string; phone: string; photo?: string; interest: string }) => {
+    if (!tableId) {
+      toast({
+        title: "Erro ao salvar perfil",
+        description: "Mesa não identificada. Por favor, escaneie o QR code novamente.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const newProfile = {
       name: profileData.name,
-      phone: profileData.phone,
+      phone: profileData.phone || '',
       photo: profileData.photo,
       interest: profileData.interest,
-      tableId: tableId!,
+      tableId: tableId,
     };
     
     try {
-      // Salvar no Supabase
-      const { error } = await supabase
+      console.log('Tentando salvar perfil:', {
+        name: newProfile.name,
+        phone: newProfile.phone,
+        table_id: newProfile.tableId,
+        photo: newProfile.photo,
+        interest: newProfile.interest
+      });
+
+      const { data, error } = await supabase
         .from('bar_profiles')
-        .upsert({
+        .insert({
           name: newProfile.name,
           phone: newProfile.phone,
           table_id: newProfile.tableId,
           photo: newProfile.photo,
           interest: newProfile.interest
-        }, {
-          onConflict: 'table_id'
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
+
+      console.log('Perfil salvo com sucesso:', data);
       
       // Atualizar estado local
       setProfiles(prevProfiles => {
@@ -101,11 +119,11 @@ const Index = () => {
         title: "Perfil criado!",
         description: "Você já pode interagir com outras pessoas no bar.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao salvar perfil:', error);
       toast({
         title: "Erro ao salvar perfil",
-        description: "Não foi possível salvar seu perfil. Tente novamente.",
+        description: error.message || "Não foi possível salvar seu perfil. Tente novamente.",
         variant: "destructive"
       });
     }
