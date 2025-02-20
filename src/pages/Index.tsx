@@ -1,10 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import QRScanner from '@/components/QRScanner';
 import ProfileSetup from '@/components/ProfileSetup';
 import ChatRoom from '@/components/ChatRoom';
 import Dashboard from '@/components/Dashboard';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from "@/integrations/supabase/client";
 
 type Profile = {
   name: string;
@@ -24,12 +25,45 @@ const Index = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const { toast } = useToast();
 
+  // Carregar perfis existentes
+  useEffect(() => {
+    const loadProfiles = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('bar_profiles')
+          .select('*');
+
+        if (error) throw error;
+
+        if (data) {
+          const formattedProfiles: Profile[] = data.map(profile => ({
+            name: profile.name,
+            phone: profile.phone || '',
+            tableId: profile.table_id,
+            photo: profile.photo,
+            interest: profile.interest
+          }));
+          setProfiles(formattedProfiles);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar perfis:', error);
+        toast({
+          title: "Erro ao carregar perfis",
+          description: "Não foi possível carregar os perfis existentes.",
+          variant: "destructive"
+        });
+      }
+    };
+
+    loadProfiles();
+  }, [toast]);
+
   const handleScan = (scannedTableId: string) => {
     setTableId(scannedTableId);
     setState('PROFILE');
   };
 
-  const handleProfileComplete = (profileData: { name: string; phone: string; photo?: string; interest: string }) => {
+  const handleProfileComplete = async (profileData: { name: string; phone: string; photo?: string; interest: string }) => {
     const newProfile = {
       name: profileData.name,
       phone: profileData.phone,
@@ -38,21 +72,43 @@ const Index = () => {
       tableId: tableId!,
     };
     
-    console.log('Novo perfil criado:', newProfile);
-    
-    // Adiciona ou atualiza o perfil na lista
-    setProfiles(prevProfiles => {
-      const filteredProfiles = prevProfiles.filter(p => p.tableId !== newProfile.tableId);
-      return [...filteredProfiles, newProfile];
-    });
-    
-    setCurrentProfile(newProfile);
-    setState('DASHBOARD');
-    
-    toast({
-      title: "Perfil criado!",
-      description: "Você já pode interagir com outras pessoas no bar.",
-    });
+    try {
+      // Salvar no Supabase
+      const { error } = await supabase
+        .from('bar_profiles')
+        .upsert({
+          name: newProfile.name,
+          phone: newProfile.phone,
+          table_id: newProfile.tableId,
+          photo: newProfile.photo,
+          interest: newProfile.interest
+        }, {
+          onConflict: 'table_id'
+        });
+
+      if (error) throw error;
+      
+      // Atualizar estado local
+      setProfiles(prevProfiles => {
+        const filteredProfiles = prevProfiles.filter(p => p.tableId !== newProfile.tableId);
+        return [...filteredProfiles, newProfile];
+      });
+      
+      setCurrentProfile(newProfile);
+      setState('DASHBOARD');
+      
+      toast({
+        title: "Perfil criado!",
+        description: "Você já pode interagir com outras pessoas no bar.",
+      });
+    } catch (error) {
+      console.error('Erro ao salvar perfil:', error);
+      toast({
+        title: "Erro ao salvar perfil",
+        description: "Não foi possível salvar seu perfil. Tente novamente.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleSelectProfile = (profile: Profile) => {
