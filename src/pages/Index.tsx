@@ -37,23 +37,15 @@ const Index = () => {
     
     console.log('Novo perfil criado:', newProfile);
     
-    // Adiciona o novo perfil à lista de perfis primeiro
+    // Atualiza a lista de perfis, mantendo os perfis anteriores
     setProfiles(prevProfiles => {
-      const updatedProfiles = [...prevProfiles];
-      const existingProfileIndex = updatedProfiles.findIndex(p => p.tableId === newProfile.tableId);
-      
-      if (existingProfileIndex >= 0) {
-        // Atualiza o perfil existente
-        updatedProfiles[existingProfileIndex] = newProfile;
-      } else {
-        // Adiciona novo perfil
-        updatedProfiles.push(newProfile);
-      }
-      
-      return updatedProfiles;
+      // Remove qualquer perfil anterior da mesma mesa (se existir)
+      const otherProfiles = prevProfiles.filter(p => p.tableId !== newProfile.tableId);
+      // Adiciona o novo perfil junto com os outros perfis
+      return [...otherProfiles, newProfile];
     });
     
-    // Depois atualiza o perfil atual
+    // Atualiza o perfil atual
     setCurrentProfile(newProfile);
     
     setState('DASHBOARD');
@@ -74,8 +66,9 @@ const Index = () => {
   };
 
   const getOtherProfiles = () => {
-    // Retorna todos os perfis exceto o perfil atual
-    return profiles.filter(profile => profile.tableId !== currentProfile?.tableId);
+    if (!currentProfile) return [];
+    // Filtra apenas os perfis que não são o perfil atual
+    return profiles.filter(profile => profile.tableId !== currentProfile.tableId);
   };
 
   console.log('Estado atual:', {
@@ -109,7 +102,7 @@ const Index = () => {
               <p className="text-bar-text/80">Clique em um perfil para iniciar uma conversa</p>
             </div>
             <Dashboard 
-              profiles={profiles}
+              profiles={getOtherProfiles()}
               onSelectProfile={handleSelectProfile} 
             />
           </>
