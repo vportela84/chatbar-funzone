@@ -31,30 +31,24 @@ const Index = () => {
 
   const handleProfileComplete = (profileData: { name: string; phone: string; photo?: string; interest: string }) => {
     const newProfile = {
-      ...profileData,
+      name: profileData.name,
+      phone: profileData.phone,
+      photo: profileData.photo,
+      interest: profileData.interest,
       tableId: tableId!,
     };
     
     console.log('Novo perfil criado:', newProfile);
     
+    // Adiciona ou atualiza o perfil na lista
     setProfiles(prevProfiles => {
-      // Verifica se já existe um perfil com o mesmo tableId
-      const existingProfileIndex = prevProfiles.findIndex(p => p.tableId === newProfile.tableId);
-      
-      if (existingProfileIndex >= 0) {
-        // Se existir, substitui o perfil existente
-        const updatedProfiles = [...prevProfiles];
-        updatedProfiles[existingProfileIndex] = newProfile;
-        return updatedProfiles;
-      } else {
-        // Se não existir, adiciona o novo perfil à lista
-        return [...prevProfiles, newProfile];
-      }
+      const filteredProfiles = prevProfiles.filter(p => p.tableId !== newProfile.tableId);
+      return [...filteredProfiles, newProfile];
     });
     
     setCurrentProfile(newProfile);
-    
     setState('DASHBOARD');
+    
     toast({
       title: "Perfil criado!",
       description: "Você já pode interagir com outras pessoas no bar.",
@@ -73,15 +67,23 @@ const Index = () => {
 
   const getOtherProfiles = () => {
     if (!currentProfile) return [];
-    return profiles.filter(profile => profile.tableId !== currentProfile.tableId);
+    return profiles.filter(p => p.tableId !== currentProfile.tableId);
   };
 
   console.log('Estado atual:', {
     state,
     currentProfile,
-    profiles,
+    profiles: profiles.map(p => ({ 
+      name: p.name, 
+      tableId: p.tableId, 
+      interest: p.interest 
+    })),
     tableId,
-    filteredProfiles: getOtherProfiles()
+    filteredProfiles: getOtherProfiles().map(p => ({ 
+      name: p.name, 
+      tableId: p.tableId, 
+      interest: p.interest 
+    }))
   });
 
   return (
