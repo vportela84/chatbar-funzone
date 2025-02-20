@@ -37,15 +37,21 @@ const Index = () => {
     
     console.log('Novo perfil criado:', newProfile);
     
-    // Atualiza a lista de perfis, mantendo os perfis anteriores
     setProfiles(prevProfiles => {
-      // Remove qualquer perfil anterior da mesma mesa (se existir)
-      const otherProfiles = prevProfiles.filter(p => p.tableId !== newProfile.tableId);
-      // Adiciona o novo perfil junto com os outros perfis
-      return [...otherProfiles, newProfile];
+      // Verifica se já existe um perfil com o mesmo tableId
+      const existingProfileIndex = prevProfiles.findIndex(p => p.tableId === newProfile.tableId);
+      
+      if (existingProfileIndex >= 0) {
+        // Se existir, substitui o perfil existente
+        const updatedProfiles = [...prevProfiles];
+        updatedProfiles[existingProfileIndex] = newProfile;
+        return updatedProfiles;
+      } else {
+        // Se não existir, adiciona o novo perfil à lista
+        return [...prevProfiles, newProfile];
+      }
     });
     
-    // Atualiza o perfil atual
     setCurrentProfile(newProfile);
     
     setState('DASHBOARD');
@@ -67,7 +73,6 @@ const Index = () => {
 
   const getOtherProfiles = () => {
     if (!currentProfile) return [];
-    // Filtra apenas os perfis que não são o perfil atual
     return profiles.filter(profile => profile.tableId !== currentProfile.tableId);
   };
 
