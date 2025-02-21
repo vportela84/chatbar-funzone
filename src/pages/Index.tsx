@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import QRScanner from '@/components/QRScanner';
 import ProfileSetup from '@/components/ProfileSetup';
@@ -25,7 +24,6 @@ const Index = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const { toast } = useToast();
 
-  // Carregar perfis existentes
   useEffect(() => {
     const loadProfiles = async () => {
       try {
@@ -58,9 +56,31 @@ const Index = () => {
     loadProfiles();
   }, [toast]);
 
-  const handleScan = (scannedTableId: string) => {
-    setTableId(scannedTableId);
-    setState('PROFILE');
+  const handleScan = async (scannedTableId: string) => {
+    const { data: existingProfile } = await supabase
+      .from('bar_profiles')
+      .select('*')
+      .eq('table_id', scannedTableId)
+      .single();
+
+    if (existingProfile) {
+      const profile: Profile = {
+        name: existingProfile.name,
+        phone: existingProfile.phone || '',
+        tableId: existingProfile.table_id,
+        photo: existingProfile.photo,
+        interest: existingProfile.interest
+      };
+      setCurrentProfile(profile);
+      setState('DASHBOARD');
+      toast({
+        title: "Perfil encontrado",
+        description: "Bem-vindo de volta!",
+      });
+    } else {
+      setTableId(scannedTableId);
+      setState('PROFILE');
+    }
   };
 
   const handleProfileComplete = async (profileData: { name: string; phone: string; photo?: string; interest: string }) => {
@@ -82,7 +102,7 @@ const Index = () => {
     };
     
     try {
-      console.log('Tentando salvar perfil:', {
+      console.log('Tentando salvar/atualizar perfil:', {
         name: newProfile.name,
         phone: newProfile.phone,
         table_id: newProfile.tableId,
@@ -92,7 +112,7 @@ const Index = () => {
 
       const { data, error } = await supabase
         .from('bar_profiles')
-        .insert({
+        .upsert({
           name: newProfile.name,
           phone: newProfile.phone,
           table_id: newProfile.tableId,
@@ -106,7 +126,6 @@ const Index = () => {
 
       console.log('Perfil salvo com sucesso:', data);
       
-      // Atualizar estado local
       setProfiles(prevProfiles => {
         const filteredProfiles = prevProfiles.filter(p => p.tableId !== newProfile.tableId);
         return [...filteredProfiles, newProfile];
