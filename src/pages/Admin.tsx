@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -194,7 +195,7 @@ const Admin = () => {
                     <div className="flex items-center space-x-2 text-primary/80">
                       <Users className="w-4 h-4" />
                       <span className="text-sm">
-                        {activeUsers[bar.id]?.length || 0} online
+                        {bar.activeUsers} online
                       </span>
                     </div>
                   </div>
@@ -242,28 +243,9 @@ const Admin = () => {
               <div className="p-4 bg-black/20 rounded-lg">
                 <h3 className="text-lg font-semibold text-primary mb-4">Clientes Ativos</h3>
                 <div className="space-y-4">
-                  {activeUsers[selectedBar.id]?.map((user, index) => (
-                    <div 
-                      key={index}
-                      className="flex items-center justify-between p-3 bg-black/30 rounded-lg"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
-                          <Users className="w-5 h-5 text-primary" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-bar-text">{user.name}</p>
-                          <p className="text-sm text-bar-text/60">Mesa: {user.tableId}</p>
-                        </div>
-                      </div>
-                      <p className="text-sm text-bar-text/60">{user.phone}</p>
-                    </div>
-                  ))}
-                  {!activeUsers[selectedBar.id] && (
-                    <p className="text-bar-text/60 text-center">
-                      Nenhum cliente ativo no momento
-                    </p>
-                  )}
+                  <p className="text-bar-text/60 text-center">
+                    Nenhum cliente ativo no momento
+                  </p>
                 </div>
               </div>
             </CardContent>
