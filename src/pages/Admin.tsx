@@ -18,6 +18,7 @@ interface Bar {
   id: string;
   name: string;
   address: string;
+  city: string;
   qrCode: string;
   activeUsers: number;
 }
@@ -34,6 +35,7 @@ const Admin = () => {
   const [selectedBar, setSelectedBar] = useState<Bar | null>(null);
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
+  const [city, setCity] = useState('');
   const [showQRCode, setShowQRCode] = useState(false);
   const [selectedQRCode, setSelectedQRCode] = useState<string>('');
   const { toast } = useToast();
@@ -52,12 +54,14 @@ const Admin = () => {
       id: Date.now().toString(),
       name,
       address,
+      city,
       qrCode: `https://barmatch.app/join/${Date.now()}`,
       activeUsers: 0,
     };
     setBars([...bars, newBar]);
     setName('');
     setAddress('');
+    setCity('');
     toast({
       title: "Bar cadastrado com sucesso!",
       description: "O QR Code foi gerado automaticamente.",
@@ -107,6 +111,16 @@ const Admin = () => {
                     placeholder="Digite o endereço completo"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="city">Cidade</Label>
+                  <Input
+                    id="city"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    className="bg-black/20 border-primary/20 text-white placeholder:text-white/50"
+                    placeholder="Digite a cidade"
+                  />
+                </div>
                 <Button type="submit" className="w-full">Cadastrar Bar</Button>
               </form>
             </CardContent>
@@ -131,7 +145,9 @@ const Admin = () => {
                       </span>
                     </div>
                   </div>
-                  <CardDescription>{bar.address}</CardDescription>
+                  <CardDescription>
+                    {bar.address}, {bar.city}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="flex justify-between items-center">
                   <Button 
@@ -168,7 +184,7 @@ const Admin = () => {
                   <X className="w-4 h-4" />
                 </Button>
               </div>
-              <CardDescription>{selectedBar.address}</CardDescription>
+              <CardDescription>{selectedBar.address}, {selectedBar.city}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="p-4 bg-black/20 rounded-lg">
