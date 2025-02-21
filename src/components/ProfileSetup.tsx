@@ -11,13 +11,16 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 interface ProfileSetupProps {
   onComplete: (profile: { name: string; phone: string; photo?: string; interest: string }) => void;
   tableId: string;
+  onTableIdChange: (tableId: string) => void;
 }
 
-const ProfileSetup = ({ onComplete, tableId }: ProfileSetupProps) => {
+const ProfileSetup = ({ onComplete, tableId, onTableIdChange }: ProfileSetupProps) => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [photo, setPhoto] = useState<string | null>(null);
   const [interest, setInterest] = useState("all");
+  const [showProfileForm, setShowProfileForm] = useState(false);
+  const [tempTableId, setTempTableId] = useState(tableId);
   const { toast } = useToast();
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,7 +34,21 @@ const ProfileSetup = ({ onComplete, tableId }: ProfileSetupProps) => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleTableIdSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tempTableId.trim()) {
+      toast({
+        title: "Número da mesa obrigatório",
+        description: "Por favor, digite o número da sua mesa",
+        variant: "destructive",
+      });
+      return;
+    }
+    onTableIdChange(tempTableId);
+    setShowProfileForm(true);
+  };
+
+  const handleProfileSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
       toast({
@@ -44,10 +61,39 @@ const ProfileSetup = ({ onComplete, tableId }: ProfileSetupProps) => {
     onComplete({ name, phone, photo: photo || undefined, interest });
   };
 
+  if (!showProfileForm) {
+    return (
+      <form onSubmit={handleTableIdSubmit} className="space-y-6 p-6 bg-bar-bg rounded-lg max-w-md w-full mx-auto animate-fadeIn">
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold text-bar-text">Bem-vindo ao Bar Match</h2>
+          <p className="text-bar-text/80">Digite o número da sua mesa para começar</p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="tableId" className="text-bar-text">Número da Mesa</Label>
+          <Input
+            id="tableId"
+            value={tempTableId}
+            onChange={(e) => setTempTableId(e.target.value)}
+            className="bg-black/20 border-primary/20 text-white"
+            placeholder="Ex: 123"
+          />
+        </div>
+
+        <Button 
+          type="submit"
+          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+        >
+          Continuar
+        </Button>
+      </form>
+    );
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 p-6 bg-bar-bg rounded-lg max-w-md w-full mx-auto animate-fadeIn">
+    <form onSubmit={handleProfileSubmit} className="space-y-6 p-6 bg-bar-bg rounded-lg max-w-md w-full mx-auto animate-fadeIn">
       <div className="space-y-2">
-        <h2 className="text-2xl font-bold text-bar-text">Bem-vindo à Mesa {tableId}</h2>
+        <h2 className="text-2xl font-bold text-bar-text">Mesa {tableId}</h2>
         <p className="text-bar-text/80">Crie seu perfil para começar a conversar</p>
       </div>
 

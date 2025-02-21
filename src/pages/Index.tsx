@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import QRScanner from '@/components/QRScanner';
 import ProfileSetup from '@/components/ProfileSetup';
@@ -17,8 +18,8 @@ type Profile = {
 type AppState = 'SCAN' | 'PROFILE' | 'DASHBOARD' | 'CHAT';
 
 const Index = () => {
-  const [state, setState] = useState<AppState>('SCAN');
-  const [tableId, setTableId] = useState<string | null>(null);
+  const [state, setState] = useState<AppState>('PROFILE');
+  const [tableId, setTableId] = useState<string>('');
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -56,30 +57,33 @@ const Index = () => {
     loadProfiles();
   }, [toast]);
 
-  const handleScan = async (scannedTableId: string) => {
-    const { data: existingProfile } = await supabase
-      .from('bar_profiles')
-      .select('*')
-      .eq('table_id', scannedTableId)
-      .single();
+  const handleTableIdChange = async (newTableId: string) => {
+    try {
+      const { data: existingProfile } = await supabase
+        .from('bar_profiles')
+        .select('*')
+        .eq('table_id', newTableId)
+        .single();
 
-    if (existingProfile) {
-      const profile: Profile = {
-        name: existingProfile.name,
-        phone: existingProfile.phone || '',
-        tableId: existingProfile.table_id,
-        photo: existingProfile.photo,
-        interest: existingProfile.interest
-      };
-      setCurrentProfile(profile);
-      setState('DASHBOARD');
-      toast({
-        title: "Perfil encontrado",
-        description: "Bem-vindo de volta!",
-      });
-    } else {
-      setTableId(scannedTableId);
-      setState('PROFILE');
+      if (existingProfile) {
+        const profile: Profile = {
+          name: existingProfile.name,
+          phone: existingProfile.phone || '',
+          tableId: existingProfile.table_id,
+          photo: existingProfile.photo,
+          interest: existingProfile.interest
+        };
+        setCurrentProfile(profile);
+        setState('DASHBOARD');
+        toast({
+          title: "Perfil encontrado",
+          description: "Bem-vindo de volta!",
+        });
+      } else {
+        setTableId(newTableId);
+      }
+    } catch (error) {
+      setTableId(newTableId);
     }
   };
 
@@ -87,7 +91,7 @@ const Index = () => {
     if (!tableId) {
       toast({
         title: "Erro ao salvar perfil",
-        description: "Mesa não identificada. Por favor, escaneie o QR code novamente.",
+        description: "Mesa não identificada. Por favor, digite o número da sua mesa.",
         variant: "destructive"
       });
       return;
@@ -187,12 +191,12 @@ const Index = () => {
           <p className="text-bar-text/80">Connect with people at the bar</p>
         </header>
 
-        {state === 'SCAN' && (
-          <QRScanner onScan={handleScan} />
-        )}
-
-        {state === 'PROFILE' && tableId && (
-          <ProfileSetup onComplete={handleProfileComplete} tableId={tableId} />
+        {state === 'PROFILE' && (
+          <ProfileSetup 
+            onComplete={handleProfileComplete} 
+            tableId={tableId}
+            onTableIdChange={handleTableIdChange}
+          />
         )}
 
         {state === 'DASHBOARD' && currentProfile && (
