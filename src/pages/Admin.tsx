@@ -1,11 +1,11 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { QrCode, Users, X } from 'lucide-react';
+import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
   DialogContent,
@@ -40,32 +40,87 @@ const Admin = () => {
   const [selectedQRCode, setSelectedQRCode] = useState<string>('');
   const { toast } = useToast();
 
-  // Simulating active users for demo purposes
-  const [activeUsers] = useState<Record<string, ActiveUser[]>>({
-    "1": [
-      { name: "João", tableId: "TABLE-1", phone: "11999999999", photo: undefined },
-      { name: "Maria", tableId: "TABLE-2", phone: "11988888888", photo: undefined },
-    ],
-  });
+  useEffect(() => {
+    fetchBars();
+  }, []);
 
-  const handleCreateBar = (e: React.FormEvent) => {
+  const fetchBars = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('bars')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (data) {
+        const formattedBars: Bar[] = data.map(bar => ({
+          id: bar.id,
+          name: bar.name,
+          address: bar.address,
+          city: bar.city,
+          qrCode: bar.qr_code || `https://barmatch.app/join/${bar.id}`,
+          activeUsers: 0
+        }));
+        setBars(formattedBars);
+      }
+    } catch (error: any) {
+      console.error('Erro ao carregar bares:', error);
+      toast({
+        title: "Erro ao carregar bares",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleCreateBar = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newBar: Bar = {
-      id: Date.now().toString(),
-      name,
-      address,
-      city,
-      qrCode: `https://barmatch.app/join/${Date.now()}`,
-      activeUsers: 0,
-    };
-    setBars([...bars, newBar]);
-    setName('');
-    setAddress('');
-    setCity('');
-    toast({
-      title: "Bar cadastrado com sucesso!",
-      description: "O QR Code foi gerado automaticamente.",
-    });
+    
+    try {
+      const { data, error } = await supabase
+        .from('bars')
+        .insert([
+          {
+            name,
+            address,
+            city,
+            qr_code: `https://barmatch.app/join/${Date.now()}`
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        const newBar: Bar = {
+          id: data.id,
+          name: data.name,
+          address: data.address,
+          city: data.city,
+          qrCode: data.qr_code,
+          activeUsers: 0
+        };
+
+        setBars(prevBars => [newBar, ...prevBars]);
+        setName('');
+        setAddress('');
+        setCity('');
+        
+        toast({
+          title: "Bar cadastrado com sucesso!",
+          description: "O QR Code foi gerado automaticamente.",
+        });
+      }
+    } catch (error: any) {
+      console.error('Erro ao cadastrar bar:', error);
+      toast({
+        title: "Erro ao cadastrar bar",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   };
 
   const handleShowQRCode = (qrCode: string, e: React.MouseEvent) => {
@@ -83,7 +138,6 @@ const Admin = () => {
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Formulário de Cadastro */}
           <Card className="bg-bar-bg border-primary/20">
             <CardHeader>
               <CardTitle className="text-primary">Cadastrar Novo Bar</CardTitle>
@@ -126,7 +180,6 @@ const Admin = () => {
             </CardContent>
           </Card>
 
-          {/* Lista de Bares */}
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-primary mb-4">Bares Cadastrados</h2>
             {bars.map((bar) => (
@@ -170,7 +223,6 @@ const Admin = () => {
           </div>
         </div>
 
-        {/* Detalhes do bar selecionado */}
         {selectedBar && (
           <Card className="mt-8 bg-bar-bg border-primary/20">
             <CardHeader>
@@ -218,7 +270,6 @@ const Admin = () => {
           </Card>
         )}
 
-        {/* Dialog do QR Code */}
         <Dialog open={showQRCode} onOpenChange={setShowQRCode}>
           <DialogContent className="bg-bar-bg border-primary/20">
             <DialogHeader>

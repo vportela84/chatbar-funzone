@@ -39,6 +39,33 @@ export type Database = {
         }
         Relationships: []
       }
+      bars: {
+        Row: {
+          address: string
+          city: string
+          created_at: string
+          id: string
+          name: string
+          qr_code: string | null
+        }
+        Insert: {
+          address: string
+          city: string
+          created_at?: string
+          id?: string
+          name: string
+          qr_code?: string | null
+        }
+        Update: {
+          address?: string
+          city?: string
+          created_at?: string
+          id?: string
+          name?: string
+          qr_code?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
