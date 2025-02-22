@@ -5,14 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ImagePlus, UserRound } from 'lucide-react';
+import { ImagePlus, UserRound, QrCode } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from '@/integrations/supabase/client';
 
 interface ProfileSetupProps {
   onComplete: (profile: { name: string; phone: string; photo?: string; interest: string }) => void;
   tableId: string;
-  onTableIdChange: (tableId: string) => void;
+  onTableIdChange: (tableId: string, barId: string) => void;
   barId: string | null;
 }
 
@@ -21,45 +21,45 @@ const ProfileSetup = ({ onComplete, tableId, onTableIdChange, barId }: ProfileSe
   const [phone, setPhone] = useState("");
   const [photo, setPhoto] = useState<string | null>(null);
   const [interest, setInterest] = useState("all");
-  const [showProfileForm, setShowProfileForm] = useState(false);
+  const [showQRReader, setShowQRReader] = useState(!barId);
+  const [showTableInput, setShowTableInput] = useState(false);
   const [tempTableId, setTempTableId] = useState(tableId);
   const { toast } = useToast();
 
-  const handleQRCodeScan = (qrData: string) => {
+  const handleQRCodeRead = async (qrData: string) => {
     try {
-      // Exemplo de URL esperada: https://barmatch.app/join/BAR_ID/TABLE_ID
       const url = new URL(qrData);
       const segments = url.pathname.split('/');
       const barIdFromQR = segments[2];
-      const tableIdFromQR = segments[3];
 
-      if (barIdFromQR && tableIdFromQR) {
-        onTableIdChange(tableIdFromQR);
-        setShowProfileForm(true);
-      } else {
-        toast({
-          title: "QR Code inválido",
-          description: "O QR Code não contém as informações necessárias",
-          variant: "destructive",
-        });
+      if (!barIdFromQR) {
+        throw new Error("QR Code inválido");
       }
-    } catch (error) {
+
+      // Verificar se o bar existe
+      const { data: barData, error: barError } = await supabase
+        .from('bars')
+        .select('id, name')
+        .eq('id', barIdFromQR)
+        .single();
+
+      if (barError || !barData) {
+        throw new Error("Bar não encontrado");
+      }
+
+      toast({
+        title: "Bar identificado!",
+        description: `Você está em: ${barData.name}`,
+      });
+
+      setShowQRReader(false);
+      setShowTableInput(true);
+    } catch (error: any) {
       toast({
         title: "QR Code inválido",
-        description: "Não foi possível ler as informações do QR Code",
+        description: error.message || "Não foi possível ler as informações do QR Code",
         variant: "destructive",
       });
-    }
-  };
-
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhoto(reader.result as string);
-      };
-      reader.readAsDataURL(file);
     }
   };
 
@@ -73,8 +73,22 @@ const ProfileSetup = ({ onComplete, tableId, onTableIdChange, barId }: ProfileSe
       });
       return;
     }
-    onTableIdChange(tempTableId);
-    setShowProfileForm(true);
+
+    const url = new URL(window.location.href);
+    const segments = url.pathname.split('/');
+    const barIdFromURL = segments[2];
+
+    if (!barIdFromURL) {
+      toast({
+        title: "Erro",
+        description: "Por favor, escaneie primeiro o QR Code do bar",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    onTableIdChange(tempTableId, barIdFromURL);
+    setShowTableInput(false);
   };
 
   const handleProfileSubmit = (e: React.FormEvent) => {
@@ -90,12 +104,37 @@ const ProfileSetup = ({ onComplete, tableId, onTableIdChange, barId }: ProfileSe
     onComplete({ name, phone, photo: photo || undefined, interest });
   };
 
-  if (!showProfileForm) {
+  if (showQRReader) {
+    return (
+      <div className="space-y-6 p-6 bg-bar-bg rounded-lg max-w-md w-full mx-auto animate-fadeIn">
+        <div className="space-y-2 text-center">
+          <h2 className="text-2xl font-bold text-bar-text">Bem-vindo ao Bar Match</h2>
+          <p className="text-bar-text/80">Primeiro, escaneie o QR Code do bar</p>
+        </div>
+
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-64 h-64 bg-black/20 rounded-lg border-2 border-dashed border-primary flex items-center justify-center">
+            <QrCode className="w-16 h-16 text-primary opacity-50" />
+          </div>
+          
+          {/* Temporariamente usando um botão para simular o scanner */}
+          <Button 
+            onClick={() => handleQRCodeRead('https://barmatch.app/join/123')}
+            className="w-full bg-primary hover:bg-primary/90"
+          >
+            Escanear QR Code
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (showTableInput) {
     return (
       <form onSubmit={handleTableIdSubmit} className="space-y-6 p-6 bg-bar-bg rounded-lg max-w-md w-full mx-auto animate-fadeIn">
         <div className="space-y-2">
-          <h2 className="text-2xl font-bold text-bar-text">Bem-vindo ao Bar Match</h2>
-          <p className="text-bar-text/80">Digite o número da sua mesa para começar</p>
+          <h2 className="text-2xl font-bold text-bar-text">Qual é sua mesa?</h2>
+          <p className="text-bar-text/80">Digite o número da sua mesa para continuar</p>
         </div>
 
         <div className="space-y-2">
@@ -146,7 +185,16 @@ const ProfileSetup = ({ onComplete, tableId, onTableIdChange, barId }: ProfileSe
             id="photo"
             type="file"
             accept="image/*"
-            onChange={handlePhotoChange}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                  setPhoto(reader.result as string);
+                };
+                reader.readAsDataURL(file);
+              }
+            }}
             className="hidden"
           />
         </div>
