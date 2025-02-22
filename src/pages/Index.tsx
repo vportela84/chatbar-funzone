@@ -13,6 +13,7 @@ type Profile = {
   tableId: string;
   photo?: string;
   interest: string;
+  barId?: string;
 };
 
 type AppState = 'SCAN' | 'PROFILE' | 'DASHBOARD' | 'CHAT';
@@ -23,46 +24,54 @@ const Index = () => {
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [barId, setBarId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    const loadProfiles = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('bar_profiles')
-          .select('*');
+    if (barId) {
+      loadProfiles();
+    }
+  }, [barId]);
 
-        if (error) throw error;
-
-        if (data) {
-          const formattedProfiles: Profile[] = data.map(profile => ({
-            name: profile.name,
-            phone: profile.phone || '',
-            tableId: profile.table_id,
-            photo: profile.photo,
-            interest: profile.interest
-          }));
-          setProfiles(formattedProfiles);
-        }
-      } catch (error) {
-        console.error('Erro ao carregar perfis:', error);
-        toast({
-          title: "Erro ao carregar perfis",
-          description: "Não foi possível carregar os perfis existentes.",
-          variant: "destructive"
-        });
-      }
-    };
-
-    loadProfiles();
-  }, [toast]);
-
-  const handleTableIdChange = async (newTableId: string) => {
+  const loadProfiles = async () => {
     try {
+      const { data, error } = await supabase
+        .from('bar_profiles')
+        .select('*')
+        .eq('bar_id', barId);
+
+      if (error) throw error;
+
+      if (data) {
+        const formattedProfiles: Profile[] = data.map(profile => ({
+          name: profile.name,
+          phone: profile.phone || '',
+          tableId: profile.table_id,
+          photo: profile.photo,
+          interest: profile.interest,
+          barId: profile.bar_id
+        }));
+        setProfiles(formattedProfiles);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar perfis:', error);
+      toast({
+        title: "Erro ao carregar perfis",
+        description: "Não foi possível carregar os perfis existentes.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleTableIdChange = async (newTableId: string, barIdFromQR: string) => {
+    try {
+      setBarId(barIdFromQR);
+      
       const { data: existingProfile } = await supabase
         .from('bar_profiles')
         .select('*')
         .eq('table_id', newTableId)
+        .eq('bar_id', barIdFromQR)
         .single();
 
       if (existingProfile) {
@@ -71,7 +80,8 @@ const Index = () => {
           phone: existingProfile.phone || '',
           tableId: existingProfile.table_id,
           photo: existingProfile.photo,
-          interest: existingProfile.interest
+          interest: existingProfile.interest,
+          barId: existingProfile.bar_id
         };
         setCurrentProfile(profile);
         setState('DASHBOARD');
@@ -88,10 +98,10 @@ const Index = () => {
   };
 
   const handleProfileComplete = async (profileData: { name: string; phone: string; photo?: string; interest: string }) => {
-    if (!tableId) {
+    if (!tableId || !barId) {
       toast({
         title: "Erro ao salvar perfil",
-        description: "Mesa não identificada. Por favor, digite o número da sua mesa.",
+        description: "Mesa ou bar não identificados. Por favor, escaneie o QR Code novamente.",
         variant: "destructive"
       });
       return;
@@ -103,17 +113,10 @@ const Index = () => {
       photo: profileData.photo,
       interest: profileData.interest,
       tableId: tableId,
+      barId: barId
     };
     
     try {
-      console.log('Tentando salvar/atualizar perfil:', {
-        name: newProfile.name,
-        phone: newProfile.phone,
-        table_id: newProfile.tableId,
-        photo: newProfile.photo,
-        interest: newProfile.interest
-      });
-
       const { data, error } = await supabase
         .from('bar_profiles')
         .upsert({
@@ -121,14 +124,13 @@ const Index = () => {
           phone: newProfile.phone,
           table_id: newProfile.tableId,
           photo: newProfile.photo,
-          interest: newProfile.interest
+          interest: newProfile.interest,
+          bar_id: newProfile.barId
         })
         .select()
         .single();
 
       if (error) throw error;
-
-      console.log('Perfil salvo com sucesso:', data);
       
       setProfiles(prevProfiles => {
         const filteredProfiles = prevProfiles.filter(p => p.tableId !== newProfile.tableId);
@@ -164,24 +166,8 @@ const Index = () => {
 
   const getOtherProfiles = () => {
     if (!currentProfile) return [];
-    return profiles.filter(p => p.tableId !== currentProfile.tableId);
+    return profiles.filter(p => p.tableId !== currentProfile.tableId && p.barId === currentProfile.barId);
   };
-
-  console.log('Estado atual:', {
-    state,
-    currentProfile,
-    profiles: profiles.map(p => ({ 
-      name: p.name, 
-      tableId: p.tableId, 
-      interest: p.interest 
-    })),
-    tableId,
-    filteredProfiles: getOtherProfiles().map(p => ({ 
-      name: p.name, 
-      tableId: p.tableId, 
-      interest: p.interest 
-    }))
-  });
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-bar-bg to-black text-bar-text p-6">
@@ -195,7 +181,8 @@ const Index = () => {
           <ProfileSetup 
             onComplete={handleProfileComplete} 
             tableId={tableId}
-            onTableIdChange={handleTableIdChange}
+            onTableIdChange={(newTableId) => handleTableIdChange(newTableId, barId!)}
+            barId={barId}
           />
         )}
 

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,14 +7,16 @@ import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ImagePlus, UserRound } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { supabase } from '@/integrations/supabase/client';
 
 interface ProfileSetupProps {
   onComplete: (profile: { name: string; phone: string; photo?: string; interest: string }) => void;
   tableId: string;
   onTableIdChange: (tableId: string) => void;
+  barId: string | null;
 }
 
-const ProfileSetup = ({ onComplete, tableId, onTableIdChange }: ProfileSetupProps) => {
+const ProfileSetup = ({ onComplete, tableId, onTableIdChange, barId }: ProfileSetupProps) => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [photo, setPhoto] = useState<string | null>(null);
@@ -22,6 +24,33 @@ const ProfileSetup = ({ onComplete, tableId, onTableIdChange }: ProfileSetupProp
   const [showProfileForm, setShowProfileForm] = useState(false);
   const [tempTableId, setTempTableId] = useState(tableId);
   const { toast } = useToast();
+
+  const handleQRCodeScan = (qrData: string) => {
+    try {
+      // Exemplo de URL esperada: https://barmatch.app/join/BAR_ID/TABLE_ID
+      const url = new URL(qrData);
+      const segments = url.pathname.split('/');
+      const barIdFromQR = segments[2];
+      const tableIdFromQR = segments[3];
+
+      if (barIdFromQR && tableIdFromQR) {
+        onTableIdChange(tableIdFromQR);
+        setShowProfileForm(true);
+      } else {
+        toast({
+          title: "QR Code inválido",
+          description: "O QR Code não contém as informações necessárias",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "QR Code inválido",
+        description: "Não foi possível ler as informações do QR Code",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

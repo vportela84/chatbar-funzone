@@ -11,6 +11,7 @@ export type Database = {
     Tables: {
       bar_profiles: {
         Row: {
+          bar_id: string | null
           created_at: string
           id: string
           interest: string
@@ -20,6 +21,7 @@ export type Database = {
           table_id: string
         }
         Insert: {
+          bar_id?: string | null
           created_at?: string
           id?: string
           interest: string
@@ -29,6 +31,7 @@ export type Database = {
           table_id: string
         }
         Update: {
+          bar_id?: string | null
           created_at?: string
           id?: string
           interest?: string
@@ -37,7 +40,15 @@ export type Database = {
           photo?: string | null
           table_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "bar_profiles_bar_id_fkey"
+            columns: ["bar_id"]
+            isOneToOne: false
+            referencedRelation: "bars"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       bars: {
         Row: {

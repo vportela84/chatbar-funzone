@@ -79,6 +79,7 @@ const Admin = () => {
     e.preventDefault();
     
     try {
+      const barId = Date.now().toString();
       const { data, error } = await supabase
         .from('bars')
         .insert([
@@ -86,7 +87,7 @@ const Admin = () => {
             name,
             address,
             city,
-            qr_code: `https://barmatch.app/join/${Date.now()}`
+            qr_code: `https://barmatch.app/join/${barId}` // Novo formato do QR Code
           }
         ])
         .select()
