@@ -181,7 +181,7 @@ const Index = () => {
           <ProfileSetup 
             onComplete={handleProfileComplete} 
             tableId={tableId}
-            onTableIdChange={(newTableId) => handleTableIdChange(newTableId, barId!)}
+            onTableIdChange={handleTableIdChange}
             barId={barId}
           />
         )}
