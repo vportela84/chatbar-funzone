@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,16 +15,17 @@ interface ProfileSetupProps {
   barId: string | null;
 }
 
-const ProfileSetup = ({ onComplete, tableId, onTableIdChange, barId }: ProfileSetupProps) => {
+const ProfileSetup = ({ onComplete, tableId, onTableIdChange, barId: initialBarId }: ProfileSetupProps) => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [photo, setPhoto] = useState<string | null>(null);
   const [interest, setInterest] = useState("all");
-  const [showQRReader, setShowQRReader] = useState(!barId);
+  const [showQRReader, setShowQRReader] = useState(!initialBarId);
   const [showTableInput, setShowTableInput] = useState(false);
   const [tempTableId, setTempTableId] = useState(tableId);
   const [manualBarId, setManualBarId] = useState("");
   const [showManualInput, setShowManualInput] = useState(false);
+  const [currentBarId, setCurrentBarId] = useState<string | null>(initialBarId);
   const { toast } = useToast();
 
   const verifyBarId = async (barId: string) => {
@@ -58,6 +58,7 @@ const ProfileSetup = ({ onComplete, tableId, onTableIdChange, barId }: ProfileSe
       }
 
       await verifyBarId(barIdFromQR);
+      setCurrentBarId(barIdFromQR);
       setShowQRReader(false);
       setShowTableInput(true);
     } catch (error: any) {
@@ -77,6 +78,7 @@ const ProfileSetup = ({ onComplete, tableId, onTableIdChange, barId }: ProfileSe
       }
 
       await verifyBarId(manualBarId);
+      setCurrentBarId(manualBarId);
       setShowQRReader(false);
       setShowTableInput(true);
     } catch (error: any) {
@@ -99,20 +101,16 @@ const ProfileSetup = ({ onComplete, tableId, onTableIdChange, barId }: ProfileSe
       return;
     }
 
-    const url = new URL(window.location.href);
-    const segments = url.pathname.split('/');
-    const barIdFromURL = segments[2];
-
-    if (!barIdFromURL) {
+    if (!currentBarId) {
       toast({
         title: "Erro",
-        description: "Por favor, escaneie primeiro o QR Code do bar",
+        description: "Bar não identificado. Por favor, tente novamente.",
         variant: "destructive",
       });
       return;
     }
 
-    onTableIdChange(tempTableId, barIdFromURL);
+    onTableIdChange(tempTableId, currentBarId);
     setShowTableInput(false);
   };
 
@@ -143,7 +141,6 @@ const ProfileSetup = ({ onComplete, tableId, onTableIdChange, barId }: ProfileSe
               <QrCode className="w-16 h-16 text-primary opacity-50" />
             </div>
             
-            {/* Temporariamente usando um botão para simular o scanner */}
             <Button 
               onClick={() => handleQRCodeRead('https://barmatch.app/join/d7bed73d-407b-4c00-a4d1-2ccc42bf24d7')}
               className="w-full bg-primary hover:bg-primary/90"
