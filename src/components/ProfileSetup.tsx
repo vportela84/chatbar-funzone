@@ -24,7 +24,28 @@ const ProfileSetup = ({ onComplete, tableId, onTableIdChange, barId }: ProfileSe
   const [showQRReader, setShowQRReader] = useState(!barId);
   const [showTableInput, setShowTableInput] = useState(false);
   const [tempTableId, setTempTableId] = useState(tableId);
+  const [manualBarId, setManualBarId] = useState("");
+  const [showManualInput, setShowManualInput] = useState(false);
   const { toast } = useToast();
+
+  const verifyBarId = async (barId: string) => {
+    const { data: barData, error: barError } = await supabase
+      .from('bars')
+      .select('id, name')
+      .eq('id', barId)
+      .single();
+
+    if (barError || !barData) {
+      throw new Error("Bar não encontrado");
+    }
+
+    toast({
+      title: "Bar identificado!",
+      description: `Você está em: ${barData.name}`,
+    });
+
+    return barData;
+  };
 
   const handleQRCodeRead = async (qrData: string) => {
     try {
@@ -36,28 +57,32 @@ const ProfileSetup = ({ onComplete, tableId, onTableIdChange, barId }: ProfileSe
         throw new Error("QR Code inválido");
       }
 
-      // Verificar se o bar existe
-      const { data: barData, error: barError } = await supabase
-        .from('bars')
-        .select('id, name')
-        .eq('id', barIdFromQR)
-        .single();
-
-      if (barError || !barData) {
-        throw new Error("Bar não encontrado");
-      }
-
-      toast({
-        title: "Bar identificado!",
-        description: `Você está em: ${barData.name}`,
-      });
-
+      await verifyBarId(barIdFromQR);
       setShowQRReader(false);
       setShowTableInput(true);
     } catch (error: any) {
       toast({
         title: "QR Code inválido",
         description: error.message || "Não foi possível ler as informações do QR Code",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleManualBarIdSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (!manualBarId.trim()) {
+        throw new Error("Por favor, digite o ID do bar");
+      }
+
+      await verifyBarId(manualBarId);
+      setShowQRReader(false);
+      setShowTableInput(true);
+    } catch (error: any) {
+      toast({
+        title: "ID do bar inválido",
+        description: error.message,
         variant: "destructive",
       });
     }
@@ -109,22 +134,63 @@ const ProfileSetup = ({ onComplete, tableId, onTableIdChange, barId }: ProfileSe
       <div className="space-y-6 p-6 bg-bar-bg rounded-lg max-w-md w-full mx-auto animate-fadeIn">
         <div className="space-y-2 text-center">
           <h2 className="text-2xl font-bold text-bar-text">Bem-vindo ao Bar Match</h2>
-          <p className="text-bar-text/80">Primeiro, escaneie o QR Code do bar</p>
+          <p className="text-bar-text/80">Escaneie o QR Code do bar ou insira o ID manualmente</p>
         </div>
 
-        <div className="flex flex-col items-center space-y-4">
-          <div className="w-64 h-64 bg-black/20 rounded-lg border-2 border-dashed border-primary flex items-center justify-center">
-            <QrCode className="w-16 h-16 text-primary opacity-50" />
+        {!showManualInput ? (
+          <div className="flex flex-col items-center space-y-4">
+            <div className="w-64 h-64 bg-black/20 rounded-lg border-2 border-dashed border-primary flex items-center justify-center">
+              <QrCode className="w-16 h-16 text-primary opacity-50" />
+            </div>
+            
+            {/* Temporariamente usando um botão para simular o scanner */}
+            <Button 
+              onClick={() => handleQRCodeRead('https://barmatch.app/join/d7bed73d-407b-4c00-a4d1-2ccc42bf24d7')}
+              className="w-full bg-primary hover:bg-primary/90"
+            >
+              Escanear QR Code
+            </Button>
+            
+            <Button 
+              onClick={() => setShowManualInput(true)}
+              variant="outline" 
+              className="w-full"
+            >
+              Inserir ID manualmente
+            </Button>
           </div>
-          
-          {/* Temporariamente usando um botão para simular o scanner */}
-          <Button 
-            onClick={() => handleQRCodeRead('https://barmatch.app/join/123')}
-            className="w-full bg-primary hover:bg-primary/90"
-          >
-            Escanear QR Code
-          </Button>
-        </div>
+        ) : (
+          <form onSubmit={handleManualBarIdSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="barId" className="text-bar-text">ID do Bar</Label>
+              <Input
+                id="barId"
+                value={manualBarId}
+                onChange={(e) => setManualBarId(e.target.value)}
+                className="bg-black/20 border-primary/20 text-white"
+                placeholder="Digite o ID do bar"
+              />
+            </div>
+
+            <div className="flex flex-col space-y-2">
+              <Button 
+                type="submit"
+                className="w-full bg-primary hover:bg-primary/90"
+              >
+                Continuar
+              </Button>
+              
+              <Button 
+                type="button"
+                onClick={() => setShowManualInput(false)}
+                variant="outline" 
+                className="w-full"
+              >
+                Voltar para QR Code
+              </Button>
+            </div>
+          </form>
+        )}
       </div>
     );
   }
