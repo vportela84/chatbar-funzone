@@ -64,17 +64,32 @@ const Index = () => {
   };
 
   const handleTableIdChange = async (newTableId: string, barIdFromQR: string) => {
+    setTableId(newTableId);
+    setBarId(barIdFromQR);
+  };
+
+  const handleProfileComplete = async (profileData: { name: string; phone: string; photo?: string; interest: string }) => {
+    if (!tableId || !barId) {
+      toast({
+        title: "Erro ao salvar perfil",
+        description: "Mesa ou bar não identificados. Por favor, escaneie o QR Code novamente.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
-      setBarId(barIdFromQR);
-      
+      // Verifica se já existe um perfil com o mesmo telefone na mesma mesa e bar
       const { data: existingProfile } = await supabase
         .from('bar_profiles')
         .select('*')
-        .eq('table_id', newTableId)
-        .eq('bar_id', barIdFromQR)
+        .eq('table_id', tableId)
+        .eq('bar_id', barId)
+        .eq('phone', profileData.phone)
         .single();
 
       if (existingProfile) {
+        // Se encontrou um perfil com o mesmo telefone, recupera ele
         const profile: Profile = {
           name: existingProfile.name,
           phone: existingProfile.phone || '',
@@ -89,34 +104,19 @@ const Index = () => {
           title: "Perfil encontrado",
           description: "Bem-vindo de volta!",
         });
-      } else {
-        setTableId(newTableId);
+        return;
       }
-    } catch (error) {
-      setTableId(newTableId);
-    }
-  };
 
-  const handleProfileComplete = async (profileData: { name: string; phone: string; photo?: string; interest: string }) => {
-    if (!tableId || !barId) {
-      toast({
-        title: "Erro ao salvar perfil",
-        description: "Mesa ou bar não identificados. Por favor, escaneie o QR Code novamente.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const newProfile = {
-      name: profileData.name,
-      phone: profileData.phone || '',
-      photo: profileData.photo,
-      interest: profileData.interest,
-      tableId: tableId,
-      barId: barId
-    };
-    
-    try {
+      // Se não encontrou, cria um novo perfil
+      const newProfile = {
+        name: profileData.name,
+        phone: profileData.phone || '',
+        photo: profileData.photo,
+        interest: profileData.interest,
+        tableId: tableId,
+        barId: barId
+      };
+      
       const { data, error } = await supabase
         .from('bar_profiles')
         .upsert({
@@ -133,7 +133,9 @@ const Index = () => {
       if (error) throw error;
       
       setProfiles(prevProfiles => {
-        const filteredProfiles = prevProfiles.filter(p => p.tableId !== newProfile.tableId);
+        const filteredProfiles = prevProfiles.filter(p => 
+          !(p.tableId === newProfile.tableId && p.phone === newProfile.phone && p.barId === newProfile.barId)
+        );
         return [...filteredProfiles, newProfile];
       });
       
