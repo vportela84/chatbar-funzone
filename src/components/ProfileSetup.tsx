@@ -26,6 +26,7 @@ const ProfileSetup = ({ onComplete, tableId, onTableIdChange, barId: initialBarI
   const [manualBarId, setManualBarId] = useState("");
   const [showManualInput, setShowManualInput] = useState(false);
   const [currentBarId, setCurrentBarId] = useState<string | null>(initialBarId);
+  const [barName, setBarName] = useState<string>("");
   const { toast } = useToast();
 
   const verifyBarId = async (barId: string) => {
@@ -127,6 +128,29 @@ const ProfileSetup = ({ onComplete, tableId, onTableIdChange, barId: initialBarI
     onComplete({ name, phone, photo: photo || undefined, interest });
   };
 
+  const fetchBarName = async (barId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('bars')
+        .select('name')
+        .eq('id', barId)
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setBarName(data.name);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar nome do bar:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (currentBarId) {
+      fetchBarName(currentBarId);
+    }
+  }, [currentBarId]);
+
   if (showQRReader) {
     return (
       <div className="space-y-6 p-6 bg-bar-bg rounded-lg max-w-md w-full mx-auto animate-fadeIn">
@@ -224,8 +248,8 @@ const ProfileSetup = ({ onComplete, tableId, onTableIdChange, barId: initialBarI
   return (
     <form onSubmit={handleProfileSubmit} className="space-y-6 p-6 bg-bar-bg rounded-lg max-w-md w-full mx-auto animate-fadeIn">
       <div className="space-y-2">
-        <h2 className="text-2xl font-bold text-bar-text">Mesa {tableId}</h2>
-        <p className="text-bar-text/80">Crie seu perfil para começar a conversar</p>
+        <h2 className="text-2xl font-bold text-bar-text">{barName}</h2>
+        <p className="text-bar-text/80">Mesa {tableId}</p>
       </div>
 
       <div className="flex flex-col items-center space-y-4">

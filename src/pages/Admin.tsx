@@ -1,12 +1,13 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { QrCode, Users, X } from 'lucide-react';
+import { QrCode } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
+import AdminDashboard from '@/components/AdminDashboard';
 import {
   Dialog,
   DialogContent,
@@ -21,19 +22,10 @@ interface Bar {
   address: string;
   city: string;
   qrCode: string;
-  activeUsers: number;
-}
-
-interface ActiveUser {
-  name: string;
-  tableId: string;
-  phone: string;
-  photo?: string;
 }
 
 const Admin = () => {
   const [bars, setBars] = useState<Bar[]>([]);
-  const [selectedBar, setSelectedBar] = useState<Bar | null>(null);
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
@@ -41,45 +33,10 @@ const Admin = () => {
   const [selectedQRCode, setSelectedQRCode] = useState<string>('');
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchBars();
-  }, []);
-
-  const fetchBars = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('bars')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      if (data) {
-        const formattedBars: Bar[] = data.map(bar => ({
-          id: bar.id,
-          name: bar.name,
-          address: bar.address,
-          city: bar.city,
-          qrCode: bar.qr_code || `https://barmatch.app/join/${bar.id}`,
-          activeUsers: 0
-        }));
-        setBars(formattedBars);
-      }
-    } catch (error: any) {
-      console.error('Erro ao carregar bares:', error);
-      toast({
-        title: "Erro ao carregar bares",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  };
-
   const handleCreateBar = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
-      const barId = Date.now().toString();
       const { data, error } = await supabase
         .from('bars')
         .insert([
@@ -87,7 +44,6 @@ const Admin = () => {
             name,
             address,
             city,
-            qr_code: `https://barmatch.app/join/${barId}` // Novo formato do QR Code
           }
         ])
         .select()
@@ -96,13 +52,22 @@ const Admin = () => {
       if (error) throw error;
 
       if (data) {
+        const qrCodeUrl = `https://barmatch.app/join/${data.id}`;
+        
+        // Atualiza o bar com o QR code
+        const { error: updateError } = await supabase
+          .from('bars')
+          .update({ qr_code: qrCodeUrl })
+          .eq('id', data.id);
+
+        if (updateError) throw updateError;
+
         const newBar: Bar = {
           id: data.id,
           name: data.name,
           address: data.address,
           city: data.city,
-          qrCode: data.qr_code,
-          activeUsers: 0
+          qrCode: qrCodeUrl,
         };
 
         setBars(prevBars => [newBar, ...prevBars]);
@@ -110,6 +75,10 @@ const Admin = () => {
         setAddress('');
         setCity('');
         
+        // Mostra o QR Code automaticamente após criar o bar
+        setSelectedQRCode(qrCodeUrl);
+        setShowQRCode(true);
+
         toast({
           title: "Bar cadastrado com sucesso!",
           description: "O QR Code foi gerado automaticamente.",
@@ -119,7 +88,7 @@ const Admin = () => {
       console.error('Erro ao cadastrar bar:', error);
       toast({
         title: "Erro ao cadastrar bar",
-        description: error.message,
+        description: error.message || "Não foi possível cadastrar o bar. Tente novamente.",
         variant: "destructive"
       });
     }
@@ -139,7 +108,7 @@ const Admin = () => {
           <p className="text-2xl text-bar-text/80">Área Administrativa</p>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 gap-8">
           <Card className="bg-bar-bg border-primary/20">
             <CardHeader>
               <CardTitle className="text-primary">Cadastrar Novo Bar</CardTitle>
@@ -153,7 +122,7 @@ const Admin = () => {
                     id="name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="bg-black/20 border-primary/20 text-white placeholder:text-white/50"
+                    className="bg-black/20 border-primary/20 text-white"
                     placeholder="Digite o nome do bar"
                   />
                 </div>
@@ -163,7 +132,7 @@ const Admin = () => {
                     id="address"
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
-                    className="bg-black/20 border-primary/20 text-white placeholder:text-white/50"
+                    className="bg-black/20 border-primary/20 text-white"
                     placeholder="Digite o endereço completo"
                   />
                 </div>
@@ -173,7 +142,7 @@ const Admin = () => {
                     id="city"
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
-                    className="bg-black/20 border-primary/20 text-white placeholder:text-white/50"
+                    className="bg-black/20 border-primary/20 text-white"
                     placeholder="Digite a cidade"
                   />
                 </div>
@@ -182,76 +151,8 @@ const Admin = () => {
             </CardContent>
           </Card>
 
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold text-primary mb-4">Bares Cadastrados</h2>
-            {bars.map((bar) => (
-              <Card 
-                key={bar.id}
-                className="bg-bar-bg border-primary/20 cursor-pointer hover:border-primary transition-colors"
-                onClick={() => setSelectedBar(bar)}
-              >
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="text-bar-text">{bar.name}</CardTitle>
-                    <div className="flex items-center space-x-2 text-primary/80">
-                      <Users className="w-4 h-4" />
-                      <span className="text-sm">
-                        {bar.activeUsers} online
-                      </span>
-                    </div>
-                  </div>
-                  <CardDescription>
-                    {bar.address}, {bar.city}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="flex justify-between items-center">
-                  <Button 
-                    variant="outline" 
-                    className="text-primary border-primary/20"
-                    onClick={(e) => handleShowQRCode(bar.qrCode, e)}
-                  >
-                    <QrCode className="w-4 h-4 mr-2" />
-                    Ver QR Code
-                  </Button>
-                  <span className="text-sm text-bar-text/60">ID: {bar.id}</span>
-                </CardContent>
-              </Card>
-            ))}
-            {bars.length === 0 && (
-              <p className="text-center text-bar-text/60 py-8">
-                Nenhum bar cadastrado ainda
-              </p>
-            )}
-          </div>
+          <AdminDashboard />
         </div>
-
-        {selectedBar && (
-          <Card className="mt-8 bg-bar-bg border-primary/20">
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-primary">{selectedBar.name}</CardTitle>
-                <Button
-                  variant="ghost"
-                  onClick={() => setSelectedBar(null)}
-                  className="text-bar-text/60 hover:text-bar-text"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-              <CardDescription>{selectedBar.address}, {selectedBar.city}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 bg-black/20 rounded-lg">
-                <h3 className="text-lg font-semibold text-primary mb-4">Clientes Ativos</h3>
-                <div className="space-y-4">
-                  <p className="text-bar-text/60 text-center">
-                    Nenhum cliente ativo no momento
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         <Dialog open={showQRCode} onOpenChange={setShowQRCode}>
           <DialogContent className="bg-bar-bg border-primary/20">
