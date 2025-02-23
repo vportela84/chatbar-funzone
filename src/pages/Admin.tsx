@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,7 +21,7 @@ interface Bar {
   name: string;
   address: string;
   city: string;
-  qrCode: string;
+  qr_code?: string;
 }
 
 const Admin = () => {
@@ -32,6 +32,29 @@ const Admin = () => {
   const [showQRCode, setShowQRCode] = useState(false);
   const [selectedQRCode, setSelectedQRCode] = useState<string>('');
   const { toast } = useToast();
+
+  const loadBars = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('bars')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      if (data) setBars(data);
+    } catch (error) {
+      console.error('Erro ao carregar bares:', error);
+      toast({
+        title: "Erro ao carregar bares",
+        description: "Não foi possível carregar a lista de bares.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  useEffect(() => {
+    loadBars();
+  }, []);
 
   const handleCreateBar = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,15 +85,7 @@ const Admin = () => {
 
         if (updateError) throw updateError;
 
-        const newBar: Bar = {
-          id: data.id,
-          name: data.name,
-          address: data.address,
-          city: data.city,
-          qrCode: qrCodeUrl,
-        };
-
-        setBars(prevBars => [newBar, ...prevBars]);
+        await loadBars(); // Recarrega a lista de bares
         setName('');
         setAddress('');
         setCity('');
@@ -94,8 +109,7 @@ const Admin = () => {
     }
   };
 
-  const handleShowQRCode = (qrCode: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleShowQRCode = (qrCode: string) => {
     setSelectedQRCode(qrCode);
     setShowQRCode(true);
   };
@@ -148,6 +162,41 @@ const Admin = () => {
                 </div>
                 <Button type="submit" className="w-full">Cadastrar Bar</Button>
               </form>
+            </CardContent>
+          </Card>
+
+          {/* Lista de Bares Cadastrados */}
+          <Card className="bg-bar-bg border-primary/20">
+            <CardHeader>
+              <CardTitle className="text-primary">Bares Cadastrados</CardTitle>
+              <CardDescription>Lista de todos os bares cadastrados</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {bars.map((bar) => (
+                  <Card key={bar.id} className="bg-black/20 border-primary/10">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-medium text-primary">{bar.name}</h3>
+                          <p className="text-sm text-primary/70">{bar.address}, {bar.city}</p>
+                        </div>
+                        {bar.qr_code && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleShowQRCode(bar.qr_code!)}
+                            className="flex items-center gap-2"
+                          >
+                            <QrCode className="w-4 h-4" />
+                            Ver QR Code
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </CardContent>
           </Card>
 

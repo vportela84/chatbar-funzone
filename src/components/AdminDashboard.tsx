@@ -77,7 +77,7 @@ const AdminDashboard = () => {
           <CardHeader>
             <div className="flex justify-between items-center">
               <CardTitle className="text-bar-text">{bar.name}</CardTitle>
-              <Badge variant="outline" className="flex items-center gap-2">
+              <Badge variant="outline" className="flex items-center gap-2 text-primary">
                 <Users className="w-4 h-4" />
                 {bar.profiles.length} online
               </Badge>
@@ -90,10 +90,10 @@ const AdminDashboard = () => {
                   <CardContent className="p-4">
                     <div className="flex items-center space-x-4">
                       <div>
-                        <p className="font-medium text-bar-text">{profile.name}</p>
-                        <p className="text-sm text-bar-text/60">Mesa {profile.tableId}</p>
+                        <p className="font-medium text-primary/90">{profile.name}</p>
+                        <p className="text-sm text-primary/70">Mesa {profile.tableId}</p>
                         {profile.phone && (
-                          <p className="text-sm text-bar-text/60">{profile.phone}</p>
+                          <p className="text-sm text-primary/70">{profile.phone}</p>
                         )}
                       </div>
                     </div>
