@@ -77,6 +77,44 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_messages: {
+        Row: {
+          bar_id: string
+          created_at: string
+          id: string
+          likes: number | null
+          message: string
+          receiver_profile_id: string
+          sender_profile_id: string
+        }
+        Insert: {
+          bar_id: string
+          created_at?: string
+          id?: string
+          likes?: number | null
+          message: string
+          receiver_profile_id: string
+          sender_profile_id: string
+        }
+        Update: {
+          bar_id?: string
+          created_at?: string
+          id?: string
+          likes?: number | null
+          message?: string
+          receiver_profile_id?: string
+          sender_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_bar_id_fkey"
+            columns: ["bar_id"]
+            isOneToOne: false
+            referencedRelation: "bars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
