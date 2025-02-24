@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,7 +35,6 @@ const ChatRoom = ({ tableId, profile, targetProfile }: ChatRoomProps) => {
   const [barName, setBarName] = useState("");
   const { toast } = useToast();
 
-  // Carregar nome do bar
   useEffect(() => {
     const loadBarName = async () => {
       if (!profile.barId) return;
@@ -60,14 +58,12 @@ const ChatRoom = ({ tableId, profile, targetProfile }: ChatRoomProps) => {
     loadBarName();
   }, [profile.barId]);
 
-  // Carregar mensagens existentes
   useEffect(() => {
     const loadMessages = async () => {
       if (!profile.barId) return;
 
       const query = `phone.eq.${profile.phone},phone.eq.${targetProfile.phone}`;
       
-      // Primeiro, carregamos os perfis relevantes
       const { data: profiles, error: profilesError } = await supabase
         .from('bar_profiles')
         .select('name, phone, table_id')
@@ -80,7 +76,6 @@ const ChatRoom = ({ tableId, profile, targetProfile }: ChatRoomProps) => {
 
       const profileMap = new Map(profiles.map(p => [p.phone, p]));
 
-      // Depois, buscamos as mensagens
       const { data: messages, error: messagesError } = await supabase
         .from('chat_messages')
         .select('*')
@@ -114,7 +109,6 @@ const ChatRoom = ({ tableId, profile, targetProfile }: ChatRoomProps) => {
 
     loadMessages();
 
-    // Inscrever para atualizações em tempo real
     const channel = supabase
       .channel('chat-updates')
       .on(
@@ -179,17 +173,26 @@ const ChatRoom = ({ tableId, profile, targetProfile }: ChatRoomProps) => {
 
   const handleLike = async (messageId: string) => {
     try {
-      // Primeiro, atualizamos diretamente no banco de dados
+      const message = messages.find(m => m.id === messageId);
+      
+      if (message?.likes >= 1) {
+        toast({
+          title: "Limite de curtidas",
+          description: "Esta mensagem já foi curtida.",
+          variant: "default"
+        });
+        return;
+      }
+
       const { data, error } = await supabase
         .from('chat_messages')
-        .update({ likes: messages.find(m => m.id === messageId)?.likes + 1 || 1 })
+        .update({ likes: 1 })
         .eq('id', messageId)
         .select()
         .single();
 
       if (error) throw error;
 
-      // Se a atualização foi bem sucedida, atualizamos o estado local
       setMessages(prevMessages =>
         prevMessages.map(msg =>
           msg.id === messageId
@@ -239,15 +242,18 @@ const ChatRoom = ({ tableId, profile, targetProfile }: ChatRoomProps) => {
               <div className="mt-1">{msg.text}</div>
               <div className="mt-2 flex items-center justify-end gap-2 text-sm">
                 <span>{msg.likes} curtidas</span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="p-1 hover:bg-white/10"
-                  onClick={() => handleLike(msg.id)}
-                >
-                  <Heart className="w-4 h-4" />
-                </Button>
+                {msg.sender_profile_id !== profile.phone && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="p-1 hover:bg-white/10"
+                    onClick={() => handleLike(msg.id)}
+                    disabled={msg.likes >= 1}
+                  >
+                    <Heart className={`w-4 h-4 ${msg.likes >= 1 ? 'opacity-50' : ''}`} />
+                  </Button>
+                )}
               </div>
             </div>
           </div>
