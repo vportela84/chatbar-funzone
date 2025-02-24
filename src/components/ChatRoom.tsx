@@ -179,16 +179,21 @@ const ChatRoom = ({ tableId, profile, targetProfile }: ChatRoomProps) => {
 
   const handleLike = async (messageId: string) => {
     try {
-      const { error } = await supabase.rpc('increment_message_likes', {
-        message_id: messageId
-      });
+      // Primeiro, atualizamos diretamente no banco de dados
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .update({ likes: messages.find(m => m.id === messageId)?.likes + 1 || 1 })
+        .eq('id', messageId)
+        .select()
+        .single();
 
       if (error) throw error;
 
+      // Se a atualização foi bem sucedida, atualizamos o estado local
       setMessages(prevMessages =>
         prevMessages.map(msg =>
           msg.id === messageId
-            ? { ...msg, likes: msg.likes + 1 }
+            ? { ...msg, likes: data.likes }
             : msg
         )
       );
