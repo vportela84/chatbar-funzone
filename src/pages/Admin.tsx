@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +14,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import MenuAdmin from '@/components/MenuAdmin';
 
 interface Bar {
   id: string;
@@ -197,6 +197,18 @@ const Admin = () => {
                   </Card>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-bar-bg border-primary/20">
+            <CardHeader>
+              <CardTitle className="text-primary">Gerenciar Menu</CardTitle>
+              <CardDescription>Adicione ou edite itens do cardápio</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {bars.map((bar) => (
+                <MenuAdmin key={bar.id} barId={bar.id} />
+              ))}
             </CardContent>
           </Card>
 

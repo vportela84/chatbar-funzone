@@ -115,6 +115,54 @@ export type Database = {
           },
         ]
       }
+      menu_items: {
+        Row: {
+          active: boolean | null
+          bar_id: string
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          price: number
+        }
+        Insert: {
+          active?: boolean | null
+          bar_id: string
+          category: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          price: number
+        }
+        Update: {
+          active?: boolean | null
+          bar_id?: string
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_bar"
+            columns: ["bar_id"]
+            isOneToOne: false
+            referencedRelation: "bars"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_items_bar_id_fkey"
+            columns: ["bar_id"]
+            isOneToOne: false
+            referencedRelation: "bars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
