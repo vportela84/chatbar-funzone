@@ -65,8 +65,23 @@ const ChatRoom = ({ tableId, profile, targetProfile }: ChatRoomProps) => {
     const loadMessages = async () => {
       if (!profile.barId) return;
 
-      // Primeiro, buscamos as mensagens
-      const { data: messagesData, error: messagesError } = await supabase
+      const query = `phone.eq.${profile.phone},phone.eq.${targetProfile.phone}`;
+      
+      // Primeiro, carregamos os perfis relevantes
+      const { data: profiles, error: profilesError } = await supabase
+        .from('bar_profiles')
+        .select('name, phone, table_id')
+        .or(query);
+
+      if (profilesError) {
+        console.error('Erro ao carregar perfis:', profilesError);
+        return;
+      }
+
+      const profileMap = new Map(profiles.map(p => [p.phone, p]));
+
+      // Depois, buscamos as mensagens
+      const { data: messages, error: messagesError } = await supabase
         .from('chat_messages')
         .select('*')
         .or(`and(sender_profile_id.eq.${profile.phone},receiver_profile_id.eq.${targetProfile.phone}),and(sender_profile_id.eq.${targetProfile.phone},receiver_profile_id.eq.${profile.phone})`)
@@ -78,28 +93,21 @@ const ChatRoom = ({ tableId, profile, targetProfile }: ChatRoomProps) => {
         return;
       }
 
-      if (messagesData) {
-        const formattedMessages: Message[] = await Promise.all(
-          messagesData.map(async (msg) => {
-            // Para cada mensagem, buscamos o nome do remetente
-            const { data: senderData } = await supabase
-              .from('bar_profiles')
-              .select('name, table_id')
-              .eq('phone', msg.sender_profile_id)
-              .single();
-
-            return {
-              id: msg.id,
-              text: msg.message,
-              sender: senderData?.name || 'Usuário',
-              sender_profile_id: msg.sender_profile_id,
-              receiver_profile_id: msg.receiver_profile_id,
-              table: senderData?.table_id || 'N/A',
-              timestamp: new Date(msg.created_at),
-              likes: msg.likes || 0
-            };
-          })
-        );
+      if (messages) {
+        const formattedMessages: Message[] = messages.map(msg => {
+          const senderProfile = profileMap.get(msg.sender_profile_id);
+          
+          return {
+            id: msg.id,
+            text: msg.message,
+            sender: senderProfile?.name || 'Usuário',
+            sender_profile_id: msg.sender_profile_id,
+            receiver_profile_id: msg.receiver_profile_id,
+            table: senderProfile?.table_id || 'N/A',
+            timestamp: new Date(msg.created_at),
+            likes: msg.likes || 0
+          };
+        });
         setMessages(formattedMessages);
       }
     };
