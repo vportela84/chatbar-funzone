@@ -4,7 +4,6 @@ import QRScanner from '@/components/QRScanner';
 import ProfileSetup from '@/components/ProfileSetup';
 import ChatRoom from '@/components/ChatRoom';
 import Dashboard from '@/components/Dashboard';
-import TableSelection from '@/components/TableSelection';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
 
@@ -17,15 +16,15 @@ type Profile = {
   barId?: string;
 };
 
-type AppState = 'SCAN' | 'TABLE' | 'PROFILE' | 'DASHBOARD' | 'CHAT';
+type AppState = 'SCAN' | 'PROFILE' | 'DASHBOARD' | 'CHAT';
 
 const Index = () => {
-  const [state, setState] = useState<AppState>('SCAN');
+  const [state, setState] = useState<AppState>('PROFILE');
   const [tableId, setTableId] = useState<string>('');
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [barId, setBarId] = useState<string>('');
+  const [barId, setBarId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -64,14 +63,97 @@ const Index = () => {
     }
   };
 
-  const handleQrScan = (scannedTableId: string, scannedBarId: string) => {
-    setBarId(scannedBarId);
-    setState('TABLE'); // Muda para a seleção de mesa após escanear o QR ou inserir ID
+  const handleTableIdChange = async (newTableId: string, barIdFromQR: string) => {
+    setTableId(newTableId);
+    setBarId(barIdFromQR);
   };
 
-  const handleTableSelect = (selectedTableId: string) => {
-    setTableId(selectedTableId);
-    setState('PROFILE');
+  const handleProfileComplete = async (profileData: { name: string; phone: string; photo?: string; interest: string }) => {
+    if (!tableId || !barId) {
+      toast({
+        title: "Erro ao salvar perfil",
+        description: "Mesa ou bar não identificados. Por favor, escaneie o QR Code novamente.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // Verifica se já existe um perfil com o mesmo telefone na mesma mesa e bar
+      const { data: existingProfile } = await supabase
+        .from('bar_profiles')
+        .select('*')
+        .eq('table_id', tableId)
+        .eq('bar_id', barId)
+        .eq('phone', profileData.phone)
+        .single();
+
+      if (existingProfile) {
+        // Se encontrou um perfil com o mesmo telefone, recupera ele
+        const profile: Profile = {
+          name: existingProfile.name,
+          phone: existingProfile.phone || '',
+          tableId: existingProfile.table_id,
+          photo: existingProfile.photo,
+          interest: existingProfile.interest,
+          barId: existingProfile.bar_id
+        };
+        setCurrentProfile(profile);
+        setState('DASHBOARD');
+        toast({
+          title: "Perfil encontrado",
+          description: "Bem-vindo de volta!",
+        });
+        return;
+      }
+
+      // Se não encontrou, cria um novo perfil
+      const newProfile = {
+        name: profileData.name,
+        phone: profileData.phone || '',
+        photo: profileData.photo,
+        interest: profileData.interest,
+        tableId: tableId,
+        barId: barId
+      };
+      
+      const { data, error } = await supabase
+        .from('bar_profiles')
+        .upsert({
+          name: newProfile.name,
+          phone: newProfile.phone,
+          table_id: newProfile.tableId,
+          photo: newProfile.photo,
+          interest: newProfile.interest,
+          bar_id: newProfile.barId
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      setProfiles(prevProfiles => {
+        const filteredProfiles = prevProfiles.filter(p => 
+          !(p.tableId === newProfile.tableId && p.phone === newProfile.phone && p.barId === newProfile.barId)
+        );
+        return [...filteredProfiles, newProfile];
+      });
+      
+      setCurrentProfile(newProfile);
+      setState('DASHBOARD');
+      
+      toast({
+        title: "Perfil criado!",
+        description: "Você já pode interagir com outras pessoas no bar.",
+      });
+    } catch (error: any) {
+      console.error('Erro ao salvar perfil:', error);
+      toast({
+        title: "Erro ao salvar perfil",
+        description: error.message || "Não foi possível salvar seu perfil. Tente novamente.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleSelectProfile = (profile: Profile) => {
@@ -97,24 +179,12 @@ const Index = () => {
           <p className="text-bar-text/80">Connect with people at the bar</p>
         </header>
 
-        {state === 'SCAN' && (
-          <div className="flex flex-col items-center justify-center">
-            <QRScanner onScan={handleQrScan} />
-          </div>
-        )}
-
-        {state === 'TABLE' && (
-          <TableSelection 
-            barId={barId}
-            onTableSelect={handleTableSelect}
-          />
-        )}
-
         {state === 'PROFILE' && (
           <ProfileSetup 
+            onComplete={handleProfileComplete} 
             tableId={tableId}
+            onTableIdChange={handleTableIdChange}
             barId={barId}
-            onProfileCreated={() => setState('DASHBOARD')}
           />
         )}
 
