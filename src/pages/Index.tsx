@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import QRScanner from '@/components/QRScanner';
 import ProfileSetup from '@/components/ProfileSetup';
@@ -19,7 +18,7 @@ type Profile = {
 type AppState = 'SCAN' | 'PROFILE' | 'DASHBOARD' | 'CHAT';
 
 const Index = () => {
-  const [state, setState] = useState<AppState>('SCAN'); // Mudado para começar com SCAN
+  const [state, setState] = useState<AppState>('SCAN');
   const [tableId, setTableId] = useState<string>('');
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
@@ -63,10 +62,10 @@ const Index = () => {
     }
   };
 
-  const handleTableIdChange = async (newTableId: string, barIdFromQR: string) => {
-    setTableId(newTableId);
-    setBarId(barIdFromQR);
-    setState('PROFILE'); // Muda para o estado PROFILE após escanear
+  const handleQrScan = (scannedTableId: string, scannedBarId: string) => {
+    setTableId(scannedTableId);
+    setBarId(scannedBarId);
+    setState('PROFILE');
   };
 
   const handleSelectProfile = (profile: Profile) => {
@@ -94,7 +93,7 @@ const Index = () => {
 
         {state === 'SCAN' && (
           <div className="flex flex-col items-center justify-center">
-            <QRScanner onScan={handleTableIdChange} />
+            <QRScanner onScan={handleQrScan} />
           </div>
         )}
 

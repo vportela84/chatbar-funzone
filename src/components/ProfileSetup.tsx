@@ -73,15 +73,15 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ tableId, barId, onProfileCr
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-      <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 w-full max-w-md">
-        <h2 className="text-center text-2xl font-bold mb-6 text-gray-700">
-          Complete seu Cadastro
+    <div className="flex flex-col items-center justify-center min-h-[80vh]">
+      <div className="w-full max-w-md bg-gradient-to-b from-gray-900/90 to-black/90 backdrop-blur-lg rounded-xl shadow-xl p-8 space-y-6 border border-primary/20">
+        <h2 className="text-center text-2xl font-bold text-primary">
+          Complete seu Perfil
         </h2>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <Label htmlFor="name" className="block text-gray-700 text-sm font-bold mb-2">
-              Nome:
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <Label htmlFor="name" className="text-bar-text text-sm">
+              Nome
             </Label>
             <Input
               type="text"
@@ -89,12 +89,12 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ tableId, barId, onProfileCr
               placeholder="Seu nome"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className="mt-1 bg-black/50 border-primary/20 text-bar-text placeholder:text-gray-500"
             />
           </div>
-          <div className="mb-4">
-            <Label htmlFor="phone" className="block text-gray-700 text-sm font-bold mb-2">
-              Telefone:
+          <div>
+            <Label htmlFor="phone" className="text-bar-text text-sm">
+              Telefone
             </Label>
             <Input
               type="tel"
@@ -102,26 +102,26 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ tableId, barId, onProfileCr
               placeholder="Seu telefone"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className="mt-1 bg-black/50 border-primary/20 text-bar-text placeholder:text-gray-500"
             />
           </div>
-          <div className="mb-6">
-            <Label htmlFor="photo" className="block text-gray-700 text-sm font-bold mb-2">
-              Foto:
+          <div>
+            <Label htmlFor="photo" className="text-bar-text text-sm">
+              Foto
             </Label>
             <Input
               type="file"
               id="photo"
               accept="image/*"
               onChange={handlePhotoChange}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className="mt-1 bg-black/50 border-primary/20 text-bar-text file:bg-primary file:text-primary-foreground file:border-0 file:rounded-lg file:px-4 file:py-2 hover:file:bg-primary/90"
             />
           </div>
-          <div className="flex flex-col gap-4">
+          <div className="space-y-4 pt-4">
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               {isSubmitting ? 'Cadastrando...' : 'Cadastrar'}
             </Button>
@@ -129,12 +129,14 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ tableId, barId, onProfileCr
               type="button"
               variant="outline"
               onClick={() => setShowMenu(true)}
-              className="w-full"
+              className="w-full border-primary/20 text-primary hover:bg-primary/10"
             >
               Ver Cardápio
             </Button>
           </div>
-          {error && <p className="text-red-500 text-xs italic mt-4">{error}</p>}
+          {error && (
+            <p className="text-red-500 text-sm text-center mt-4">{error}</p>
+          )}
         </form>
       </div>
     </div>
