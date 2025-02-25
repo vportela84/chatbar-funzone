@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import QRScanner from '@/components/QRScanner';
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import MenuView from '@/components/MenuView';
 
 interface ProfileSetupProps {
@@ -15,56 +16,54 @@ interface ProfileSetupProps {
 const ProfileSetup: React.FC<ProfileSetupProps> = ({ tableId, barId, onProfileCreated }) => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [photo, setPhoto] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [showMenu, setShowMenu] = useState(false);
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setError(null);
 
     if (!name) {
-      setError('Por favor, insira seu nome.');
+      toast({
+        title: "Erro",
+        description: "Por favor, insira seu nome.",
+        variant: "destructive"
+      });
       setIsSubmitting(false);
       return;
     }
 
     try {
-      const formData = new FormData();
-      formData.append('name', name);
-      formData.append('phone', phone);
-      formData.append('tableId', tableId);
-      formData.append('barId', barId);
-      if (photo) {
-        formData.append('photo', photo);
-      }
+      const { error } = await supabase
+        .from('bar_profiles')
+        .insert([
+          {
+            name,
+            phone,
+            table_id: tableId,
+            bar_id: barId,
+            interest: 'all' // valor padrão
+          }
+        ]);
 
-      const response = await fetch('/api/create-profile', {
-        method: 'POST',
-        body: formData,
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Perfil criado com sucesso!",
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        console.log('Profile created successfully:', data);
-        onProfileCreated();
-      } else {
-        setError(data.message || 'Failed to create profile.');
-      }
-    } catch (e: any) {
-      console.error('There was an error creating the profile:', e);
-      setError(e.message || 'There was an error creating the profile.');
+      
+      onProfileCreated();
+    } catch (error: any) {
+      console.error('Erro ao criar perfil:', error);
+      toast({
+        title: "Erro ao criar perfil",
+        description: error.message || "Houve um erro ao criar seu perfil.",
+        variant: "destructive"
+      });
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setPhoto(e.target.files[0]);
     }
   };
 
@@ -105,18 +104,6 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ tableId, barId, onProfileCr
               className="mt-1 bg-black/50 border-primary/20 text-bar-text placeholder:text-gray-500"
             />
           </div>
-          <div>
-            <Label htmlFor="photo" className="text-bar-text text-sm">
-              Foto
-            </Label>
-            <Input
-              type="file"
-              id="photo"
-              accept="image/*"
-              onChange={handlePhotoChange}
-              className="mt-1 bg-black/50 border-primary/20 text-bar-text file:bg-primary file:text-primary-foreground file:border-0 file:rounded-lg file:px-4 file:py-2 hover:file:bg-primary/90"
-            />
-          </div>
           <div className="space-y-4 pt-4">
             <Button
               type="submit"
@@ -134,9 +121,6 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ tableId, barId, onProfileCr
               Ver Cardápio
             </Button>
           </div>
-          {error && (
-            <p className="text-red-500 text-sm text-center mt-4">{error}</p>
-          )}
         </form>
       </div>
     </div>

@@ -19,6 +19,7 @@ export type Database = {
           phone: string | null
           photo: string | null
           table_id: string
+          uuid_bar_id: string | null
         }
         Insert: {
           bar_id?: string | null
@@ -29,6 +30,7 @@ export type Database = {
           phone?: string | null
           photo?: string | null
           table_id: string
+          uuid_bar_id?: string | null
         }
         Update: {
           bar_id?: string | null
@@ -39,11 +41,12 @@ export type Database = {
           phone?: string | null
           photo?: string | null
           table_id?: string
+          uuid_bar_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "bar_profiles_bar_id_fkey"
-            columns: ["bar_id"]
+            foreignKeyName: "bar_profiles_uuid_bar_id_fkey"
+            columns: ["uuid_bar_id"]
             isOneToOne: false
             referencedRelation: "bars"
             referencedColumns: ["id"]
