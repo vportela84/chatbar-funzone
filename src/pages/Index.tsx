@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import QRScanner from '@/components/QRScanner';
 import ProfileSetup from '@/components/ProfileSetup';
 import ChatRoom from '@/components/ChatRoom';
 import Dashboard from '@/components/Dashboard';
+import TableSelection from '@/components/TableSelection';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
 
@@ -15,7 +17,7 @@ type Profile = {
   barId?: string;
 };
 
-type AppState = 'SCAN' | 'PROFILE' | 'DASHBOARD' | 'CHAT';
+type AppState = 'SCAN' | 'TABLE' | 'PROFILE' | 'DASHBOARD' | 'CHAT';
 
 const Index = () => {
   const [state, setState] = useState<AppState>('SCAN');
@@ -63,8 +65,12 @@ const Index = () => {
   };
 
   const handleQrScan = (scannedTableId: string, scannedBarId: string) => {
-    setTableId(scannedTableId);
     setBarId(scannedBarId);
+    setState('TABLE'); // Muda para a seleção de mesa após escanear o QR ou inserir ID
+  };
+
+  const handleTableSelect = (selectedTableId: string) => {
+    setTableId(selectedTableId);
     setState('PROFILE');
   };
 
@@ -95,6 +101,13 @@ const Index = () => {
           <div className="flex flex-col items-center justify-center">
             <QRScanner onScan={handleQrScan} />
           </div>
+        )}
+
+        {state === 'TABLE' && (
+          <TableSelection 
+            barId={barId}
+            onTableSelect={handleTableSelect}
+          />
         )}
 
         {state === 'PROFILE' && (
