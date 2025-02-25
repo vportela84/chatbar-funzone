@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import QRScanner from '@/components/QRScanner';
 import ProfileSetup from '@/components/ProfileSetup';
@@ -24,7 +23,7 @@ const Index = () => {
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [barId, setBarId] = useState<string | null>(null);
+  const [barId, setBarId] = useState<string>('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -79,7 +78,6 @@ const Index = () => {
     }
 
     try {
-      // Verifica se já existe um perfil com o mesmo telefone na mesma mesa e bar
       const { data: existingProfile } = await supabase
         .from('bar_profiles')
         .select('*')
@@ -89,7 +87,6 @@ const Index = () => {
         .single();
 
       if (existingProfile) {
-        // Se encontrou um perfil com o mesmo telefone, recupera ele
         const profile: Profile = {
           name: existingProfile.name,
           phone: existingProfile.phone || '',
@@ -107,7 +104,6 @@ const Index = () => {
         return;
       }
 
-      // Se não encontrou, cria um novo perfil
       const newProfile = {
         name: profileData.name,
         phone: profileData.phone || '',
@@ -181,10 +177,9 @@ const Index = () => {
 
         {state === 'PROFILE' && (
           <ProfileSetup 
-            onComplete={handleProfileComplete} 
             tableId={tableId}
-            onTableIdChange={handleTableIdChange}
             barId={barId}
+            onProfileCreated={() => setState('DASHBOARD')}
           />
         )}
 

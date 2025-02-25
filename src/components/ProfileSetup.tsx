@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { QrScanner } from "@/components/QRScanner";
+import QRScanner from '@/components/QRScanner';
 import MenuView from '@/components/MenuView';
 
 interface ProfileSetupProps {
@@ -17,6 +18,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ tableId, barId, onProfileCr
   const [photo, setPhoto] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showMenu, setShowMenu] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,6 +68,10 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ tableId, barId, onProfileCr
     }
   };
 
+  if (showMenu) {
+    return <MenuView barId={barId} onBack={() => setShowMenu(false)} />;
+  }
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
       <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4 w-full max-w-md">
@@ -111,7 +117,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ tableId, barId, onProfileCr
               className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             />
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-4">
             <Button
               type="submit"
               disabled={isSubmitting}
@@ -119,11 +125,18 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ tableId, barId, onProfileCr
             >
               {isSubmitting ? 'Cadastrando...' : 'Cadastrar'}
             </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowMenu(true)}
+              className="w-full"
+            >
+              Ver Cardápio
+            </Button>
           </div>
           {error && <p className="text-red-500 text-xs italic mt-4">{error}</p>}
         </form>
       </div>
-      <MenuView tableId={tableId} barId={barId} />
     </div>
   );
 };
