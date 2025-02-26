@@ -151,6 +151,10 @@ const ProfileSetup = ({ onComplete, tableId, onTableIdChange, barId: initialBarI
     }
   }, [currentBarId]);
 
+  const handleViewMenu = () => {
+    window.open(`https://barmatch.app/menu/${currentBarId}`, '_blank');
+  };
+
   if (showQRReader) {
     return (
       <div className="space-y-6 p-6 bg-bar-bg rounded-lg max-w-md w-full mx-auto animate-fadeIn">
@@ -235,12 +239,23 @@ const ProfileSetup = ({ onComplete, tableId, onTableIdChange, barId: initialBarI
           />
         </div>
 
-        <Button 
-          type="submit"
-          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-        >
-          Continuar
-        </Button>
+        <div className="flex flex-col space-y-2">
+          <Button 
+            type="submit"
+            className="w-full bg-black text-[#FFA31A] hover:bg-black/90"
+          >
+            Continuar
+          </Button>
+          
+          <Button 
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={handleViewMenu}
+          >
+            Ver Cardápio
+          </Button>
+        </div>
       </form>
     );
   }
