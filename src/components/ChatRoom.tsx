@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +35,27 @@ const ChatRoom = ({ tableId, profile, targetProfile }: ChatRoomProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [barName, setBarName] = useState("");
   const { toast } = useToast();
+
+  // Solicitar permissão para notificações
+  useEffect(() => {
+    const requestNotificationPermission = async () => {
+      if ('Notification' in window) {
+        const permission = await Notification.requestPermission();
+        console.log('Notification permission:', permission);
+      }
+    };
+    requestNotificationPermission();
+  }, []);
+
+  // Função para mostrar notificação
+  const showNotification = (senderName: string, messageText: string) => {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(`Nova mensagem de ${senderName}`, {
+        body: messageText,
+        icon: '/favicon.ico'
+      });
+    }
+  };
 
   useEffect(() => {
     const loadBarName = async () => {
@@ -89,28 +111,16 @@ const ChatRoom = ({ tableId, profile, targetProfile }: ChatRoomProps) => {
       }
 
       if (messages) {
-        const formattedMessages: Message[] = messages.map(msg => {
-          const senderProfile = profileMap.get(msg.sender_profile_id);
-          
-          return {
-            id: msg.id,
-            text: msg.message,
-            sender: senderProfile?.name || 'Usuário',
-            sender_profile_id: msg.sender_profile_id,
-            receiver_profile_id: msg.receiver_profile_id,
-            table: senderProfile?.table_id || 'N/A',
-            timestamp: new Date(msg.created_at),
-            likes: msg.likes || 0
-          };
-        });
+        const formattedMessages = formatMessages(messages, profileMap);
         setMessages(formattedMessages);
       }
     };
 
     loadMessages();
 
+    // Inscrever-se para atualizações em tempo real
     const channel = supabase
-      .channel('chat-updates')
+      .channel('chat-messages')
       .on(
         'postgres_changes',
         {
@@ -119,8 +129,51 @@ const ChatRoom = ({ tableId, profile, targetProfile }: ChatRoomProps) => {
           table: 'chat_messages',
           filter: `bar_id=eq.${profile.barId}`
         },
-        () => {
-          loadMessages();
+        async (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const { data: newMessage } = await supabase
+              .from('chat_messages')
+              .select('*')
+              .eq('id', payload.new.id)
+              .single();
+
+            if (newMessage) {
+              const { data: senderProfile } = await supabase
+                .from('bar_profiles')
+                .select('name, phone, table_id')
+                .eq('phone', newMessage.sender_profile_id)
+                .single();
+
+              if (senderProfile) {
+                const formattedMessage = {
+                  id: newMessage.id,
+                  text: newMessage.message,
+                  sender: senderProfile.name,
+                  sender_profile_id: newMessage.sender_profile_id,
+                  receiver_profile_id: newMessage.receiver_profile_id,
+                  table: senderProfile.table_id,
+                  timestamp: new Date(newMessage.created_at),
+                  likes: newMessage.likes || 0
+                };
+
+                setMessages(prev => [...prev, formattedMessage]);
+
+                // Mostrar notificação apenas para mensagens recebidas
+                if (newMessage.sender_profile_id !== profile.phone) {
+                  showNotification(senderProfile.name, newMessage.message);
+                }
+              }
+            }
+          } else if (payload.eventType === 'UPDATE') {
+            // Atualizar likes
+            setMessages(prev => 
+              prev.map(msg => 
+                msg.id === payload.new.id 
+                  ? { ...msg, likes: payload.new.likes }
+                  : msg
+              )
+            );
+          }
         }
       )
       .subscribe();
@@ -129,6 +182,19 @@ const ChatRoom = ({ tableId, profile, targetProfile }: ChatRoomProps) => {
       supabase.removeChannel(channel);
     };
   }, [profile.barId, profile.phone, targetProfile.phone]);
+
+  const formatMessages = (messages: any[], profileMap: Map<string, any>): Message[] => {
+    return messages.map(msg => ({
+      id: msg.id,
+      text: msg.message,
+      sender: profileMap.get(msg.sender_profile_id)?.name || 'Usuário',
+      sender_profile_id: msg.sender_profile_id,
+      receiver_profile_id: msg.receiver_profile_id,
+      table: profileMap.get(msg.sender_profile_id)?.table_id || 'N/A',
+      timestamp: new Date(msg.created_at),
+      likes: msg.likes || 0
+    }));
+  };
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -148,18 +214,6 @@ const ChatRoom = ({ tableId, profile, targetProfile }: ChatRoomProps) => {
 
       if (error) throw error;
 
-      const newMessage: Message = {
-        id: data.id,
-        text: message.trim(),
-        sender: profile.name,
-        sender_profile_id: profile.phone,
-        receiver_profile_id: targetProfile.phone,
-        table: tableId,
-        timestamp: new Date(),
-        likes: 0
-      };
-
-      setMessages([...messages, newMessage]);
       setMessage("");
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error);
@@ -192,14 +246,6 @@ const ChatRoom = ({ tableId, profile, targetProfile }: ChatRoomProps) => {
         .single();
 
       if (error) throw error;
-
-      setMessages(prevMessages =>
-        prevMessages.map(msg =>
-          msg.id === messageId
-            ? { ...msg, likes: data.likes }
-            : msg
-        )
-      );
     } catch (error) {
       console.error('Erro ao curtir mensagem:', error);
       toast({
