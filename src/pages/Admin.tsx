@@ -299,7 +299,7 @@ const Admin = () => {
           <Card className="bg-bar-bg border-primary/20">
             <CardHeader>
               <CardTitle className="text-primary">Cadastrar Novo Bar</CardTitle>
-              <CardDescription>Preencha os dados do estabelecimento</CardDescription>
+              <CardDescription className="text-primary/70">Preencha os dados do estabelecimento</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleCreateBar} className="space-y-6">
@@ -308,36 +308,36 @@ const Admin = () => {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="name">Nome do Bar *</Label>
+                      <Label htmlFor="name" className="text-primary">Nome do Bar *</Label>
                       <Input
                         id="name"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="bg-black/20 border-primary/20 text-white"
+                        className="bg-black/20 border-primary/20 text-primary"
                         placeholder="Nome do estabelecimento"
                         required
                       />
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="ownerName">Nome do Responsável</Label>
+                      <Label htmlFor="ownerName" className="text-primary">Nome do Responsável</Label>
                       <Input
                         id="ownerName"
                         value={ownerName}
                         onChange={(e) => setOwnerName(e.target.value)}
-                        className="bg-black/20 border-primary/20 text-white"
+                        className="bg-black/20 border-primary/20 text-primary"
                         placeholder="Nome completo"
                       />
                     </div>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="document">CPF/CNPJ</Label>
+                    <Label htmlFor="document" className="text-primary">CPF/CNPJ</Label>
                     <Input
                       id="document"
                       value={document}
                       onChange={(e) => setDocument(e.target.value)}
-                      className="bg-black/20 border-primary/20 text-white"
+                      className="bg-black/20 border-primary/20 text-primary"
                       placeholder="CPF ou CNPJ do estabelecimento"
                     />
                   </div>
@@ -348,24 +348,24 @@ const Admin = () => {
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="md:col-span-2 space-y-2">
-                      <Label htmlFor="address">Endereço (Rua) *</Label>
+                      <Label htmlFor="address" className="text-primary">Endereço (Rua) *</Label>
                       <Input
                         id="address"
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
-                        className="bg-black/20 border-primary/20 text-white"
+                        className="bg-black/20 border-primary/20 text-primary"
                         placeholder="Rua/Avenida"
                         required
                       />
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="number">Número</Label>
+                      <Label htmlFor="number" className="text-primary">Número</Label>
                       <Input
                         id="number"
                         value={number}
                         onChange={(e) => setNumber(e.target.value)}
-                        className="bg-black/20 border-primary/20 text-white"
+                        className="bg-black/20 border-primary/20 text-primary"
                         placeholder="Número"
                       />
                     </div>
@@ -373,35 +373,35 @@ const Admin = () => {
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="neighborhood">Bairro</Label>
+                      <Label htmlFor="neighborhood" className="text-primary">Bairro</Label>
                       <Input
                         id="neighborhood"
                         value={neighborhood}
                         onChange={(e) => setNeighborhood(e.target.value)}
-                        className="bg-black/20 border-primary/20 text-white"
+                        className="bg-black/20 border-primary/20 text-primary"
                         placeholder="Bairro"
                       />
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="city">Cidade *</Label>
+                      <Label htmlFor="city" className="text-primary">Cidade *</Label>
                       <Input
                         id="city"
                         value={city}
                         onChange={(e) => setCity(e.target.value)}
-                        className="bg-black/20 border-primary/20 text-white"
+                        className="bg-black/20 border-primary/20 text-primary"
                         placeholder="Cidade"
                         required
                       />
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="state">Estado</Label>
+                      <Label htmlFor="state" className="text-primary">Estado</Label>
                       <Input
                         id="state"
                         value={state}
                         onChange={(e) => setState(e.target.value)}
-                        className="bg-black/20 border-primary/20 text-white"
+                        className="bg-black/20 border-primary/20 text-primary"
                         placeholder="Estado"
                       />
                     </div>
@@ -413,42 +413,42 @@ const Admin = () => {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="phone">Telefone/WhatsApp (Formato E.164)</Label>
+                      <Label htmlFor="phone" className="text-primary">Telefone/WhatsApp (Formato E.164)</Label>
                       <Input
                         id="phone"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        className="bg-black/20 border-primary/20 text-white"
+                        className="bg-black/20 border-primary/20 text-primary"
                         placeholder="+55XXXXXXXXXX (ex: +5511999999999)"
                       />
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="email">E-mail</Label>
+                      <Label htmlFor="email" className="text-primary">E-mail</Label>
                       <Input
                         id="email"
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="bg-black/20 border-primary/20 text-white"
+                        className="bg-black/20 border-primary/20 text-primary"
                         placeholder="email@exemplo.com"
                       />
                     </div>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="login">Login do Bar</Label>
+                    <Label htmlFor="login" className="text-primary">Login do Bar</Label>
                     <Input
                       id="login"
                       value={login}
                       onChange={(e) => setLogin(e.target.value)}
-                      className="bg-black/20 border-primary/20 text-white"
+                      className="bg-black/20 border-primary/20 text-primary"
                       placeholder="Nome de usuário para acesso"
                     />
                   </div>
                   
                   <div className="space-y-2">
-                    <Label>Assinatura do App</Label>
+                    <Label className="text-primary">Assinatura do App</Label>
                     <RadioGroup 
                       value={subscriptionPlan} 
                       onValueChange={setSubscriptionPlan}
@@ -456,19 +456,19 @@ const Admin = () => {
                     >
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="trial" id="trial" />
-                        <Label htmlFor="trial" className="cursor-pointer">Trial</Label>
+                        <Label htmlFor="trial" className="cursor-pointer text-primary">Trial</Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="monthly" id="monthly" />
-                        <Label htmlFor="monthly" className="cursor-pointer">Mensal</Label>
+                        <Label htmlFor="monthly" className="cursor-pointer text-primary">Mensal</Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="quarterly" id="quarterly" />
-                        <Label htmlFor="quarterly" className="cursor-pointer">Trimestral</Label>
+                        <Label htmlFor="quarterly" className="cursor-pointer text-primary">Trimestral</Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="yearly" id="yearly" />
-                        <Label htmlFor="yearly" className="cursor-pointer">Anual</Label>
+                        <Label htmlFor="yearly" className="cursor-pointer text-primary">Anual</Label>
                       </div>
                     </RadioGroup>
                   </div>
@@ -478,12 +478,12 @@ const Admin = () => {
                   <h3 className="text-lg font-medium text-primary">Detalhes do Estabelecimento</h3>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="description">Descrição do Bar</Label>
+                    <Label htmlFor="description" className="text-primary">Descrição do Bar</Label>
                     <Textarea
                       id="description"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      className="bg-black/20 border-primary/20 text-white min-h-[100px]"
+                      className="bg-black/20 border-primary/20 text-primary min-h-[100px]"
                       placeholder="Descreva seu estabelecimento, ambiente, público-alvo, etc."
                     />
                   </div>
@@ -493,7 +493,7 @@ const Admin = () => {
                   <h3 className="text-lg font-medium text-primary">Mídia</h3>
                   
                   <div className="space-y-2">
-                    <Label>Logo do Estabelecimento</Label>
+                    <Label className="text-primary">Logo do Estabelecimento</Label>
                     <div className="flex flex-col space-y-4">
                       <Button 
                         type="button" 
@@ -534,7 +534,7 @@ const Admin = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label>Fotos do Ambiente (máx. 5)</Label>
+                    <Label className="text-primary">Fotos do Ambiente (máx. 5)</Label>
                     <div className="flex flex-col space-y-4">
                       <Button 
                         type="button" 
@@ -586,12 +586,12 @@ const Admin = () => {
           <Card className="bg-bar-bg border-primary/20">
             <CardHeader>
               <CardTitle className="text-primary">Bares Cadastrados</CardTitle>
-              <CardDescription>Lista de todos os bares cadastrados</CardDescription>
+              <CardDescription className="text-primary/70">Lista de todos os bares cadastrados</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {bars.length === 0 ? (
-                  <p className="text-center text-bar-text/70">Nenhum bar cadastrado ainda.</p>
+                  <p className="text-center text-primary/70">Nenhum bar cadastrado ainda.</p>
                 ) : (
                   bars.map((bar) => (
                     <Card key={bar.id} className="bg-black/20 border-primary/10">
@@ -645,7 +645,7 @@ const Admin = () => {
           <DialogContent className="bg-bar-bg border-primary/20">
             <DialogHeader>
               <DialogTitle className="text-primary">QR Code do Bar</DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-primary/70">
                 Compartilhe este QR Code com seus clientes
               </DialogDescription>
             </DialogHeader>
@@ -656,7 +656,7 @@ const Admin = () => {
                 className="mx-auto"
               />
             </div>
-            <p className="text-center text-sm text-bar-text/60 mt-2">
+            <p className="text-center text-sm text-primary mt-2">
               {selectedQRCode}
             </p>
           </DialogContent>

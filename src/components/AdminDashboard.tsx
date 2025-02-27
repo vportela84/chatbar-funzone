@@ -76,7 +76,7 @@ const AdminDashboard = () => {
       {bars.length === 0 ? (
         <Card className="bg-bar-bg border-primary/20">
           <CardContent className="p-6">
-            <p className="text-center text-bar-text/70">Nenhum bar cadastrado ainda.</p>
+            <p className="text-center text-primary/70">Nenhum bar cadastrado ainda.</p>
           </CardContent>
         </Card>
       ) : (
@@ -84,7 +84,7 @@ const AdminDashboard = () => {
           <Card key={bar.id} className="bg-bar-bg border-primary/20">
             <CardHeader>
               <div className="flex justify-between items-center">
-                <CardTitle className="text-bar-text">{bar.name}</CardTitle>
+                <CardTitle className="text-primary">{bar.name}</CardTitle>
                 <Badge variant="outline" className="flex items-center gap-2 text-primary">
                   <Users className="w-4 h-4" />
                   {bar.profiles.length} online
@@ -94,7 +94,7 @@ const AdminDashboard = () => {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {bar.profiles.length === 0 ? (
-                  <p className="text-bar-text/70 col-span-full">Nenhum usuário online no momento.</p>
+                  <p className="text-primary/70 col-span-full">Nenhum usuário online no momento.</p>
                 ) : (
                   bar.profiles.map((profile, index) => (
                     <Card key={`${profile.tableId}-${index}`} className="bg-black/20 border-primary/10">
