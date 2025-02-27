@@ -72,38 +72,51 @@ const AdminDashboard = () => {
 
   return (
     <div className="space-y-6">
-      {bars.map(bar => (
-        <Card key={bar.id} className="bg-bar-bg border-primary/20">
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-bar-text">{bar.name}</CardTitle>
-              <Badge variant="outline" className="flex items-center gap-2 text-primary">
-                <Users className="w-4 h-4" />
-                {bar.profiles.length} online
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {bar.profiles.map((profile, index) => (
-                <Card key={`${profile.tableId}-${index}`} className="bg-black/20 border-primary/10">
-                  <CardContent className="p-4">
-                    <div className="flex items-center space-x-4">
-                      <div>
-                        <p className="font-medium text-primary/90">{profile.name}</p>
-                        <p className="text-sm text-primary/70">Mesa {profile.tableId}</p>
-                        {profile.phone && (
-                          <p className="text-sm text-primary/70">{profile.phone}</p>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+      <h2 className="text-2xl font-bold text-primary mb-4">Dashboard de Usuários</h2>
+      {bars.length === 0 ? (
+        <Card className="bg-bar-bg border-primary/20">
+          <CardContent className="p-6">
+            <p className="text-center text-bar-text/70">Nenhum bar cadastrado ainda.</p>
           </CardContent>
         </Card>
-      ))}
+      ) : (
+        bars.map(bar => (
+          <Card key={bar.id} className="bg-bar-bg border-primary/20">
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-bar-text">{bar.name}</CardTitle>
+                <Badge variant="outline" className="flex items-center gap-2 text-primary">
+                  <Users className="w-4 h-4" />
+                  {bar.profiles.length} online
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {bar.profiles.length === 0 ? (
+                  <p className="text-bar-text/70 col-span-full">Nenhum usuário online no momento.</p>
+                ) : (
+                  bar.profiles.map((profile, index) => (
+                    <Card key={`${profile.tableId}-${index}`} className="bg-black/20 border-primary/10">
+                      <CardContent className="p-4">
+                        <div className="flex items-center space-x-4">
+                          <div>
+                            <p className="font-medium text-primary/90">{profile.name}</p>
+                            <p className="text-sm text-primary/70">Mesa {profile.tableId}</p>
+                            {profile.phone && (
+                              <p className="text-sm text-primary/70">{profile.phone}</p>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))
+      )}
     </div>
   );
 };

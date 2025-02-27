@@ -97,6 +97,7 @@ const Admin = () => {
 
   useEffect(() => {
     loadBars();
+    console.log("Página Admin carregada");
   }, []);
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -186,6 +187,15 @@ const Admin = () => {
       for (const photo of photos) {
         const photoUrl = await uploadFile(photo.file, 'photos');
         photoUrls.push(photoUrl);
+      }
+
+      // Verificando se o bucket exists, se não, tentamos criar
+      const { data: bucketExists } = await supabase.storage.getBucket('bar-media');
+      if (!bucketExists) {
+        await supabase.storage.createBucket('bar-media', {
+          public: true
+        });
+        console.log("Bucket 'bar-media' criado");
       }
 
       const { data, error } = await supabase
@@ -403,13 +413,13 @@ const Admin = () => {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="phone">Telefone/WhatsApp</Label>
+                      <Label htmlFor="phone">Telefone/WhatsApp (Formato E.164)</Label>
                       <Input
                         id="phone"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         className="bg-black/20 border-primary/20 text-white"
-                        placeholder="+55 (XX) XXXXX-XXXX"
+                        placeholder="+55XXXXXXXXXX (ex: +5511999999999)"
                       />
                     </div>
                     
@@ -580,46 +590,50 @@ const Admin = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {bars.map((bar) => (
-                  <Card key={bar.id} className="bg-black/20 border-primary/10">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex gap-4 items-center">
-                          {bar.logo_url && (
-                            <div className="w-12 h-12 overflow-hidden rounded-md">
-                              <img 
-                                src={bar.logo_url} 
-                                alt={`Logo ${bar.name}`} 
-                                className="w-full h-full object-cover"
-                              />
+                {bars.length === 0 ? (
+                  <p className="text-center text-bar-text/70">Nenhum bar cadastrado ainda.</p>
+                ) : (
+                  bars.map((bar) => (
+                    <Card key={bar.id} className="bg-black/20 border-primary/10">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex gap-4 items-center">
+                            {bar.logo_url && (
+                              <div className="w-12 h-12 overflow-hidden rounded-md">
+                                <img 
+                                  src={bar.logo_url} 
+                                  alt={`Logo ${bar.name}`} 
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            )}
+                            <div>
+                              <h3 className="font-medium text-primary">{bar.name}</h3>
+                              <p className="text-sm text-primary/70">
+                                {bar.address}
+                                {bar.number && `, ${bar.number}`}
+                                {bar.city && `, ${bar.city}`}
+                                {bar.state && `/${bar.state}`}
+                              </p>
+                              {bar.phone && <p className="text-xs text-primary/60">{bar.phone}</p>}
                             </div>
-                          )}
-                          <div>
-                            <h3 className="font-medium text-primary">{bar.name}</h3>
-                            <p className="text-sm text-primary/70">
-                              {bar.address}
-                              {bar.number && `, ${bar.number}`}
-                              {bar.city && `, ${bar.city}`}
-                              {bar.state && `/${bar.state}`}
-                            </p>
-                            {bar.phone && <p className="text-xs text-primary/60">{bar.phone}</p>}
                           </div>
+                          {bar.qr_code && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleShowQRCode(bar.qr_code!)}
+                              className="flex items-center gap-2"
+                            >
+                              <QrCode className="w-4 h-4" />
+                              Ver QR Code
+                            </Button>
+                          )}
                         </div>
-                        {bar.qr_code && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleShowQRCode(bar.qr_code!)}
-                            className="flex items-center gap-2"
-                          >
-                            <QrCode className="w-4 h-4" />
-                            Ver QR Code
-                          </Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
