@@ -37,8 +37,8 @@ const ProfileSetup = ({ onComplete, barInfo }: ProfileSetupProps) => {
   return (
     <form onSubmit={handleProfileSubmit} className="space-y-6 p-6 bg-bar-bg rounded-lg max-w-md w-full mx-auto animate-fadeIn">
       <div className="space-y-2">
-        <h2 className="text-2xl font-bold text-bar-text">{barInfo.barName}</h2>
-        <p className="text-bar-text/80">Mesa {barInfo.tableNumber}</p>
+        <h2 className="text-2xl font-bold text-primary">{barInfo.barName}</h2>
+        <p className="text-primary/80">Mesa {barInfo.tableNumber}</p>
       </div>
 
       <div className="flex flex-col items-center space-y-4">
@@ -55,7 +55,7 @@ const ProfileSetup = ({ onComplete, barInfo }: ProfileSetupProps) => {
             className="flex items-center justify-center space-x-2 cursor-pointer p-2 border border-dashed border-primary/20 rounded-lg hover:bg-primary/5 transition-colors"
           >
             <ImagePlus className="w-5 h-5 text-primary" />
-            <span className="text-bar-text">Adicionar Foto</span>
+            <span className="text-primary">Adicionar Foto</span>
           </Label>
           <Input
             id="photo"
@@ -78,7 +78,7 @@ const ProfileSetup = ({ onComplete, barInfo }: ProfileSetupProps) => {
 
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="name" className="text-bar-text">Nome ou Apelido</Label>
+          <Label htmlFor="name" className="text-primary">Nome ou Apelido</Label>
           <Input
             id="name"
             value={name}
@@ -89,7 +89,7 @@ const ProfileSetup = ({ onComplete, barInfo }: ProfileSetupProps) => {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="phone" className="text-bar-text">Telefone (Opcional)</Label>
+          <Label htmlFor="phone" className="text-primary">Telefone (Opcional)</Label>
           <Input
             id="phone"
             value={phone}
@@ -100,7 +100,7 @@ const ProfileSetup = ({ onComplete, barInfo }: ProfileSetupProps) => {
         </div>
 
         <div className="space-y-2">
-          <Label className="text-bar-text">Tenho interesse em conhecer</Label>
+          <Label className="text-primary">Tenho interesse em conhecer</Label>
           <RadioGroup 
             value={interest} 
             onValueChange={setInterest}
@@ -108,15 +108,15 @@ const ProfileSetup = ({ onComplete, barInfo }: ProfileSetupProps) => {
           >
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="all" id="all" className="text-primary" />
-              <Label htmlFor="all" className="text-white">Todos</Label>
+              <Label htmlFor="all" className="text-primary">Todos</Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="men" id="men" className="text-primary" />
-              <Label htmlFor="men" className="text-white">Homens</Label>
+              <Label htmlFor="men" className="text-primary">Homens</Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="women" id="women" className="text-primary" />
-              <Label htmlFor="women" className="text-white">Mulheres</Label>
+              <Label htmlFor="women" className="text-primary">Mulheres</Label>
             </div>
           </RadioGroup>
         </div>

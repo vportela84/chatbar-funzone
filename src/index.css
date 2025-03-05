@@ -11,7 +11,7 @@
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
-    --primary: 47.9 95.8% 53.1%;
+    --primary: 28 100% 55%;
     --primary-foreground: 26 83.3% 14.1%;
     --secondary: 271 61% 51%;
     --secondary-foreground: 0 0% 98%;
@@ -66,4 +66,20 @@
 /* Prevent blue highlight on mobile */
 * {
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Mobile optimization */
+@media (max-width: 640px) {
+  .container {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  
+  h1 {
+    font-size: 1.5rem;
+  }
+  
+  .p-6 {
+    padding: 1rem;
+  }
 }

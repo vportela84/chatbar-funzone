@@ -42,12 +42,9 @@ const UserChat = () => {
     }
 
     // Recupera o ID do usuário atual do sessionStorage
-    const storedBarInfo = sessionStorage.getItem('currentBar');
-    if (storedBarInfo) {
-      const barInfo = JSON.parse(storedBarInfo);
-      // Aqui usamos o tableNumber como ID temporário do usuário
-      // Em um sistema real, você usaria o ID real do usuário autenticado
-      setCurrentUserId(barInfo.tableNumber);
+    const storedUserId = sessionStorage.getItem('userId');
+    if (storedUserId) {
+      setCurrentUserId(storedUserId);
     }
   }, []);
 
@@ -166,47 +163,47 @@ const UserChat = () => {
 
   if (!chatTarget) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-bar-bg to-black text-primary p-6">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-bar-bg to-black text-primary p-4">
         Carregando...
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-bar-bg to-black text-primary p-6">
-      <header className="py-4 border-b border-primary/20 mb-6">
-        <div className="container mx-auto">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-bar-bg to-black text-primary p-4 sm:p-6">
+      <header className="py-2 sm:py-4 border-b border-primary/20 mb-4 sm:mb-6">
+        <div className="mx-auto">
           <Button 
             variant="ghost" 
             onClick={handleBackToUsers}
             className="mb-2 p-0 hover:bg-transparent"
           >
             <ArrowLeft className="w-5 h-5 mr-1" />
-            <span>Voltar</span>
+            <span className="text-primary">Voltar</span>
           </Button>
-          <h1 className="text-2xl font-bold">{chatTarget.barName}</h1>
-          <p className="text-sm opacity-70">Conversa com {chatTarget.userName}</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-primary">{chatTarget.barName}</h1>
+          <p className="text-sm text-primary/70">Conversa com {chatTarget.userName}</p>
         </div>
       </header>
       
-      <main className="flex-1 container mx-auto flex flex-col">
+      <main className="flex-1 mx-auto flex flex-col w-full max-w-md">
         <Card className="bg-bar-bg border-primary/20 mb-4 flex-1 flex flex-col">
-          <CardHeader>
-            <CardTitle className="text-primary">Mensagens</CardTitle>
+          <CardHeader className="py-3 px-4">
+            <CardTitle className="text-primary text-lg">Mensagens</CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 overflow-y-auto flex flex-col">
-            <div className="flex-1 overflow-y-auto p-2">
+          <CardContent className="flex-1 overflow-y-auto flex flex-col p-3">
+            <div className="flex-1 overflow-y-auto">
               {messages.length === 0 ? (
-                <p className="text-center py-4 opacity-70">Nenhuma mensagem ainda. Diga olá!</p>
+                <p className="text-center py-4 text-primary/70">Nenhuma mensagem ainda. Diga olá!</p>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {messages.map((message) => (
                     <div 
                       key={message.id}
                       className={`flex ${message.sender_profile_id === currentUserId ? 'justify-end' : 'justify-start'}`}
                     >
                       <div 
-                        className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                        className={`max-w-[80%] rounded-lg px-3 py-2 ${
                           message.sender_profile_id === currentUserId 
                             ? 'bg-primary text-black rounded-tr-none' 
                             : 'bg-black/30 text-primary rounded-tl-none'
