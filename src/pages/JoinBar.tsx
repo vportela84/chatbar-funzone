@@ -5,21 +5,45 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const JoinBar = () => {
   const { barId } = useParams();
   const [tableNumber, setTableNumber] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [barName, setBarName] = useState('');
+  const [barName, setBarName] = useState('Carregando...');
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    // Here you would fetch the bar details using the barId from your database
-    // For now we'll simulate with a timeout
-    setTimeout(() => {
-      setBarName(`Bar #${barId}`);
-    }, 500);
+    const fetchBarName = async () => {
+      if (!barId) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('bars')
+          .select('name')
+          .eq('id', barId)
+          .single();
+
+        if (error) {
+          console.error('Error fetching bar:', error);
+          setBarName('Bar não encontrado');
+          return;
+        }
+
+        if (data) {
+          setBarName(data.name);
+        } else {
+          setBarName('Bar não encontrado');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        setBarName('Bar não encontrado');
+      }
+    };
+
+    fetchBarName();
   }, [barId]);
 
   const handleJoinTable = (e: React.FormEvent) => {
@@ -35,6 +59,13 @@ const JoinBar = () => {
 
     setIsLoading(true);
     
+    // Store the bar information in sessionStorage for use in other components
+    sessionStorage.setItem('currentBar', JSON.stringify({
+      barId,
+      barName,
+      tableNumber: tableNumber.trim()
+    }));
+    
     // Simulate joining a table
     setTimeout(() => {
       setIsLoading(false);
@@ -42,8 +73,9 @@ const JoinBar = () => {
         title: "Mesa conectada!",
         description: `Você entrou na mesa ${tableNumber} do ${barName}`,
       });
-      // In a real app, you'd redirect to the chat or main experience
-      // navigate(`/bar/${barId}/table/${tableNumber}`);
+      
+      // Navigate to a new page after successfully joining the table
+      navigate(`/bar/${barId}/table/${tableNumber}`);
     }, 1000);
   };
 
@@ -52,7 +84,7 @@ const JoinBar = () => {
       <main className="w-full max-w-md mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-primary mb-4">Bar Match</h1>
-          <p className="text-xl text-primary">{barName || 'Carregando...'}</p>
+          <p className="text-xl text-primary">{barName}</p>
         </div>
 
         <Card className="bg-bar-bg border-primary/20">
