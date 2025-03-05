@@ -30,9 +30,8 @@ const Index = () => {
     setTimeout(() => {
       setIsLoading(false);
       
-      // Aqui você faria a validação real se o ID existe no banco de dados
-      // Para esta demonstração, estamos apenas redirecionando
-      navigate(`/join/${barId}`);
+      // Agora navegamos para a página de mesa usando o ID do bar
+      navigate(`/bar/${barId}`);
     }, 1500);
   };
 
@@ -50,13 +49,13 @@ const Index = () => {
       <main className="w-full max-w-md mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-primary mb-4">Bar Match</h1>
-          <p className="text-xl text-bar-text/80">A plataforma de socialização para bares e restaurantes</p>
+          <p className="text-xl text-primary">A plataforma de socialização para bares e restaurantes</p>
         </div>
 
         <Card className="bg-bar-bg border-primary/20">
           <CardHeader>
             <CardTitle className="text-primary text-center">Entrar em um Bar</CardTitle>
-            <CardDescription className="text-primary/70 text-center">
+            <CardDescription className="text-primary text-center">
               Escaneie o QR code ou digite o ID do bar
             </CardDescription>
           </CardHeader>
@@ -73,7 +72,7 @@ const Index = () => {
               
               <div className="relative flex items-center">
                 <div className="grow h-px bg-primary/20"></div>
-                <span className="mx-3 text-sm text-primary/60">ou</span>
+                <span className="mx-3 text-sm text-primary">ou</span>
                 <div className="grow h-px bg-primary/20"></div>
               </div>
               
