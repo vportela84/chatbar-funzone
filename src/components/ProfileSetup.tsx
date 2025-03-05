@@ -1,119 +1,25 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ImagePlus, UserRound, QrCode } from 'lucide-react';
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { ImagePlus, UserRound } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ProfileSetupProps {
   onComplete: (profile: { name: string; phone: string; photo?: string; interest: string }) => void;
-  tableId: string;
-  onTableIdChange: (tableId: string, barId: string) => void;
-  barId: string | null;
+  barInfo: { barId: string; barName: string; tableNumber: string };
 }
 
-const ProfileSetup = ({ onComplete, tableId, onTableIdChange, barId: initialBarId }: ProfileSetupProps) => {
+const ProfileSetup = ({ onComplete, barInfo }: ProfileSetupProps) => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [photo, setPhoto] = useState<string | null>(null);
   const [interest, setInterest] = useState("all");
-  const [showQRReader, setShowQRReader] = useState(!initialBarId);
-  const [showTableInput, setShowTableInput] = useState(false);
-  const [tempTableId, setTempTableId] = useState(tableId);
-  const [manualBarId, setManualBarId] = useState("");
-  const [showManualInput, setShowManualInput] = useState(false);
-  const [currentBarId, setCurrentBarId] = useState<string | null>(initialBarId);
-  const [barName, setBarName] = useState<string>("");
   const { toast } = useToast();
-
-  const verifyBarId = async (barId: string) => {
-    const { data: barData, error: barError } = await supabase
-      .from('bars')
-      .select('id, name')
-      .eq('id', barId)
-      .single();
-
-    if (barError || !barData) {
-      throw new Error("Bar não encontrado");
-    }
-
-    toast({
-      title: "Bar identificado!",
-      description: `Você está em: ${barData.name}`,
-    });
-
-    return barData;
-  };
-
-  const handleQRCodeRead = async (qrData: string) => {
-    try {
-      const url = new URL(qrData);
-      const segments = url.pathname.split('/');
-      const barIdFromQR = segments[2];
-
-      if (!barIdFromQR) {
-        throw new Error("QR Code inválido");
-      }
-
-      await verifyBarId(barIdFromQR);
-      setCurrentBarId(barIdFromQR);
-      setShowQRReader(false);
-      setShowTableInput(true);
-    } catch (error: any) {
-      toast({
-        title: "QR Code inválido",
-        description: error.message || "Não foi possível ler as informações do QR Code",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleManualBarIdSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      if (!manualBarId.trim()) {
-        throw new Error("Por favor, digite o ID do bar");
-      }
-
-      await verifyBarId(manualBarId);
-      setCurrentBarId(manualBarId);
-      setShowQRReader(false);
-      setShowTableInput(true);
-    } catch (error: any) {
-      toast({
-        title: "ID do bar inválido",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleTableIdSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!tempTableId.trim()) {
-      toast({
-        title: "Número da mesa obrigatório",
-        description: "Por favor, digite o número da sua mesa",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!currentBarId) {
-      toast({
-        title: "Erro",
-        description: "Bar não identificado. Por favor, tente novamente.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    onTableIdChange(tempTableId, currentBarId);
-    setShowTableInput(false);
-  };
 
   const handleProfileSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,143 +34,11 @@ const ProfileSetup = ({ onComplete, tableId, onTableIdChange, barId: initialBarI
     onComplete({ name, phone, photo: photo || undefined, interest });
   };
 
-  const fetchBarName = async (barId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('bars')
-        .select('name')
-        .eq('id', barId)
-        .single();
-
-      if (error) throw error;
-      if (data) {
-        setBarName(data.name);
-      }
-    } catch (error) {
-      console.error('Erro ao buscar nome do bar:', error);
-    }
-  };
-
-  useEffect(() => {
-    if (currentBarId) {
-      fetchBarName(currentBarId);
-    }
-  }, [currentBarId]);
-
-  const handleViewMenu = () => {
-    window.open(`https://barmatch.app/menu/${currentBarId}`, '_blank');
-  };
-
-  if (showQRReader) {
-    return (
-      <div className="space-y-6 p-6 bg-bar-bg rounded-lg max-w-md w-full mx-auto animate-fadeIn">
-        <div className="space-y-2 text-center">
-          <h2 className="text-2xl font-bold text-bar-text">Bem-vindo ao Bar Match</h2>
-          <p className="text-bar-text/80">Escaneie o QR Code do bar ou insira o ID manualmente</p>
-        </div>
-
-        {!showManualInput ? (
-          <div className="flex flex-col items-center space-y-4">
-            <div className="w-64 h-64 bg-black/20 rounded-lg border-2 border-dashed border-primary flex items-center justify-center">
-              <QrCode className="w-16 h-16 text-primary opacity-50" />
-            </div>
-            
-            <Button 
-              onClick={() => handleQRCodeRead('https://barmatch.app/join/d7bed73d-407b-4c00-a4d1-2ccc42bf24d7')}
-              className="w-full bg-primary hover:bg-primary/90"
-            >
-              Escanear QR Code
-            </Button>
-            
-            <Button 
-              onClick={() => setShowManualInput(true)}
-              variant="outline" 
-              className="w-full"
-            >
-              Inserir ID manualmente
-            </Button>
-          </div>
-        ) : (
-          <form onSubmit={handleManualBarIdSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="barId" className="text-bar-text">ID do Bar</Label>
-              <Input
-                id="barId"
-                value={manualBarId}
-                onChange={(e) => setManualBarId(e.target.value)}
-                className="bg-black/20 border-primary/20 text-white"
-                placeholder="Digite o ID do bar"
-              />
-            </div>
-
-            <div className="flex flex-col space-y-2">
-              <Button 
-                type="submit"
-                className="w-full bg-primary hover:bg-primary/90"
-              >
-                Continuar
-              </Button>
-              
-              <Button 
-                type="button"
-                onClick={() => setShowManualInput(false)}
-                variant="outline" 
-                className="w-full"
-              >
-                Voltar para QR Code
-              </Button>
-            </div>
-          </form>
-        )}
-      </div>
-    );
-  }
-
-  if (showTableInput) {
-    return (
-      <form onSubmit={handleTableIdSubmit} className="space-y-6 p-6 bg-bar-bg rounded-lg max-w-md w-full mx-auto animate-fadeIn">
-        <div className="space-y-2">
-          <h2 className="text-2xl font-bold text-bar-text">Qual é sua mesa?</h2>
-          <p className="text-bar-text/80">Digite o número da sua mesa para continuar</p>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="tableId" className="text-bar-text">Número da Mesa</Label>
-          <Input
-            id="tableId"
-            value={tempTableId}
-            onChange={(e) => setTempTableId(e.target.value)}
-            className="bg-black/20 border-primary/20 text-white"
-            placeholder="Ex: 123"
-          />
-        </div>
-
-        <div className="flex flex-col space-y-2">
-          <Button 
-            type="submit"
-            className="w-full bg-black text-[#FFA31A] hover:bg-black/90"
-          >
-            Continuar
-          </Button>
-          
-          <Button 
-            type="button"
-            variant="outline"
-            className="w-full"
-            onClick={handleViewMenu}
-          >
-            Ver Cardápio
-          </Button>
-        </div>
-      </form>
-    );
-  }
-
   return (
     <form onSubmit={handleProfileSubmit} className="space-y-6 p-6 bg-bar-bg rounded-lg max-w-md w-full mx-auto animate-fadeIn">
       <div className="space-y-2">
-        <h2 className="text-2xl font-bold text-bar-text">{barName}</h2>
-        <p className="text-bar-text/80">Mesa {tableId}</p>
+        <h2 className="text-2xl font-bold text-bar-text">{barInfo.barName}</h2>
+        <p className="text-bar-text/80">Mesa {barInfo.tableNumber}</p>
       </div>
 
       <div className="flex flex-col items-center space-y-4">
