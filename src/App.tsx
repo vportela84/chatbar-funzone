@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import JoinBar from "./pages/JoinBar";
 import TableChat from "./pages/TableChat";
+import UserChat from "./pages/UserChat";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/admin" element={<Admin />} />
           <Route path="/bar/:barId" element={<JoinBar />} />
           <Route path="/bar/:barId/table/:tableId" element={<TableChat />} />
+          <Route path="/bar/:barId/chat/:userId" element={<UserChat />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
