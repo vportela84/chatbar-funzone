@@ -6,10 +6,19 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { QrCode, LogIn } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import QrCodeScanner from '@/components/QrCodeScanner';
+import { supabase } from '@/integrations/supabase/client';
 
 const BarAccess = () => {
   const [barId, setBarId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isQrDialogOpen, setIsQrDialogOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -24,22 +33,55 @@ const BarAccess = () => {
       return;
     }
 
+    navigateToBar(barId);
+  };
+
+  const navigateToBar = async (id: string) => {
     setIsLoading(true);
     
-    // Navigate to the JoinBar page with the barId
-    setTimeout(() => {
+    try {
+      // Verificar se o bar existe
+      const { data, error } = await supabase
+        .from('bars')
+        .select('id, name')
+        .eq('id', id)
+        .single();
+      
+      if (error || !data) {
+        toast({
+          title: "Bar não encontrado",
+          description: "Verifique o ID do bar e tente novamente",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      // Bar encontrado, navegar para a página
+      setTimeout(() => {
+        setIsLoading(false);
+        navigate(`/bar/${id}`);
+      }, 500);
+      
+    } catch (error) {
+      console.error('Erro ao verificar bar:', error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao verificar o bar",
+        variant: "destructive"
+      });
       setIsLoading(false);
-      navigate(`/bar/${barId}`);
-    }, 500);
+    }
   };
 
   const handleScanQRCode = () => {
-    // This is a placeholder for QR code scanning functionality
-    // In a real implementation, this would activate the device camera
-    toast({
-      title: "Scan QR Code",
-      description: "Esta funcionalidade será implementada em breve"
-    });
+    setIsQrDialogOpen(true);
+  };
+
+  const handleQrCodeScanned = (scannedBarId: string) => {
+    setIsQrDialogOpen(false);
+    setBarId(scannedBarId);
+    navigateToBar(scannedBarId);
   };
 
   return (
@@ -102,6 +144,18 @@ const BarAccess = () => {
       >
         Voltar para página inicial
       </Button>
+
+      <Dialog open={isQrDialogOpen} onOpenChange={setIsQrDialogOpen}>
+        <DialogContent className="bg-bar-bg border-primary/20 text-primary">
+          <DialogHeader>
+            <DialogTitle className="text-primary text-center">Escanear QR Code</DialogTitle>
+          </DialogHeader>
+          <QrCodeScanner 
+            onScanSuccess={handleQrCodeScanned} 
+            onClose={() => setIsQrDialogOpen(false)} 
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
