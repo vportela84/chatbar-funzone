@@ -81,22 +81,36 @@ const BarRegistrationForm = () => {
   };
 
   const uploadFile = async (file: File, path: string) => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-    const filePath = `${path}/${fileName}`;
+    try {
+      // Verificando se o bucket exists, se não, tentamos criar
+      const { data: bucketExists } = await supabase.storage.getBucket('bar-media');
+      if (!bucketExists) {
+        await supabase.storage.createBucket('bar-media', {
+          public: true
+        });
+        console.log("Bucket 'bar-media' criado");
+      }
 
-    const { data, error } = await supabase.storage
-      .from('bar-media')
-      .upload(filePath, file);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+      const filePath = `${path}/${fileName}`;
 
-    if (error) throw error;
+      const { data, error } = await supabase.storage
+        .from('bar-media')
+        .upload(filePath, file);
 
-    // Obter URL pública do arquivo
-    const { data: publicURL } = supabase.storage
-      .from('bar-media')
-      .getPublicUrl(filePath);
+      if (error) throw error;
 
-    return publicURL.publicUrl;
+      // Obter URL pública do arquivo
+      const { data: publicURL } = supabase.storage
+        .from('bar-media')
+        .getPublicUrl(filePath);
+
+      return publicURL.publicUrl;
+    } catch (err) {
+      console.error('Erro ao fazer upload do arquivo:', err);
+      throw err;
+    }
   };
 
   const handleCreateBar = async (e: React.FormEvent) => {
@@ -123,15 +137,6 @@ const BarRegistrationForm = () => {
       for (const photo of photos) {
         const photoUrl = await uploadFile(photo.file, 'photos');
         photoUrls.push(photoUrl);
-      }
-
-      // Verificando se o bucket exists, se não, tentamos criar
-      const { data: bucketExists } = await supabase.storage.getBucket('bar-media');
-      if (!bucketExists) {
-        await supabase.storage.createBucket('bar-media', {
-          public: true
-        });
-        console.log("Bucket 'bar-media' criado");
       }
 
       const { data, error } = await supabase

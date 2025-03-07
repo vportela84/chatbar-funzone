@@ -82,25 +82,61 @@ export type Database = {
           address: string
           city: string
           created_at: string
+          description: string | null
+          document: string | null
+          email: string | null
           id: string
+          login: string | null
+          logo_url: string | null
           name: string
+          neighborhood: string | null
+          number: string | null
+          owner_name: string | null
+          phone: string | null
+          photos_url: string[] | null
           qr_code: string | null
+          state: string | null
+          subscription_plan: string | null
         }
         Insert: {
           address: string
           city: string
           created_at?: string
+          description?: string | null
+          document?: string | null
+          email?: string | null
           id?: string
+          login?: string | null
+          logo_url?: string | null
           name: string
+          neighborhood?: string | null
+          number?: string | null
+          owner_name?: string | null
+          phone?: string | null
+          photos_url?: string[] | null
           qr_code?: string | null
+          state?: string | null
+          subscription_plan?: string | null
         }
         Update: {
           address?: string
           city?: string
           created_at?: string
+          description?: string | null
+          document?: string | null
+          email?: string | null
           id?: string
+          login?: string | null
+          logo_url?: string | null
           name?: string
+          neighborhood?: string | null
+          number?: string | null
+          owner_name?: string | null
+          phone?: string | null
+          photos_url?: string[] | null
           qr_code?: string | null
+          state?: string | null
+          subscription_plan?: string | null
         }
         Relationships: []
       }
