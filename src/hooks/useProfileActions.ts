@@ -22,7 +22,6 @@ export const useProfileActions = (barInfo: BarInfo | null, userId: string | null
           const presenceTrackStatus = await presenceChannel.track({
             userId,
             name,
-            status: 'online',
             lastSeen: new Date().toISOString()
           });
           console.log('Presence tracked:', presenceTrackStatus);

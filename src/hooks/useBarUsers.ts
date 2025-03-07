@@ -67,7 +67,7 @@ export const useBarUsers = (barInfo: BarInfo | null, userId: string | null) => {
               
               return {
                 ...user,
-                online: !!userPresence && userPresence.status === 'online'
+                online: !!userPresence // If user presence exists, they're online
               };
             });
           });
@@ -76,19 +76,23 @@ export const useBarUsers = (barInfo: BarInfo | null, userId: string | null) => {
           console.log('User joined:', key, newPresences);
           
           // Handle new user joining (already handled by sync event)
-          toast({
-            title: "Usuário online",
-            description: `${newPresences[0]?.name || 'Alguém'} está online agora`,
-          });
+          if (newPresences && newPresences.length > 0 && newPresences[0].name) {
+            toast({
+              title: "Usuário online",
+              description: `${newPresences[0].name || 'Alguém'} está online agora`,
+            });
+          }
         })
         .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
           console.log('User left:', key, leftPresences);
           
           // Handle user leaving (already handled by sync event)
-          if (leftPresences[0]?.userId !== userId) {
+          if (leftPresences && leftPresences.length > 0 && 
+              leftPresences[0].userId !== userId && 
+              leftPresences[0].name) {
             toast({
               title: "Usuário offline",
-              description: `${leftPresences[0]?.name || 'Alguém'} está offline agora`,
+              description: `${leftPresences[0].name || 'Alguém'} está offline agora`,
             });
           }
         });

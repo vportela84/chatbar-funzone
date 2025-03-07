@@ -25,4 +25,6 @@ export interface PresenceState {
   userId: string;
   status: 'online' | 'offline';
   lastSeen?: string;
+  name?: string;
+  presence_ref?: string;
 }
