@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,7 @@ interface ConnectedUser {
   table_id: string;
   photo?: string;
   interest: string;
+  online?: boolean;
 }
 
 interface ConnectedUsersListProps {
@@ -100,7 +102,7 @@ const ConnectedUsersList: React.FC<ConnectedUsersListProps> = ({
             {users.map((user) => (
               <div key={user.id} className="flex items-center justify-between p-3 rounded-lg bg-black/20 hover:bg-black/30 transition-colors">
                 <div className="flex items-center">
-                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary mr-3">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-primary mr-3 ${user.online ? 'bg-green-500/20 border-2 border-green-500' : 'bg-primary/20'}`}>
                     {user.photo ? (
                       <img src={user.photo} alt={user.name} className="w-10 h-10 rounded-full object-cover" />
                     ) : (
@@ -108,12 +110,18 @@ const ConnectedUsersList: React.FC<ConnectedUsersListProps> = ({
                     )}
                   </div>
                   <div>
-                    <h3 className="font-medium text-primary">{user.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-medium text-primary">{user.name}</h3>
+                      <span className={`w-2 h-2 rounded-full ${user.online ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                    </div>
                     <div className="flex flex-col space-y-1">
                       <p className="text-xs text-primary opacity-70">Mesa {user.table_id}</p>
                       <p className="text-xs text-primary opacity-70 flex items-center">
                         {getInterestIcon(user.interest)}
                         Interesse: {translateInterest(user.interest)}
+                      </p>
+                      <p className="text-xs text-primary opacity-70">
+                        Status: {user.online ? 'Online' : 'Offline'}
                       </p>
                     </div>
                   </div>
@@ -131,6 +139,7 @@ const ConnectedUsersList: React.FC<ConnectedUsersListProps> = ({
                     variant="outline"
                     size="sm"
                     className="flex items-center"
+                    disabled={!user.online}
                   >
                     <MessageSquare className="w-4 h-4 mr-1" />
                     Conversar

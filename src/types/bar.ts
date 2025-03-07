@@ -18,4 +18,11 @@ export interface ConnectedUser {
   table_id: string;
   photo?: string;
   interest: string;
+  online?: boolean; // New field to track online status
+}
+
+export interface PresenceState {
+  userId: string;
+  status: 'online' | 'offline';
+  lastSeen?: string;
 }

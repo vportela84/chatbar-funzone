@@ -7,6 +7,34 @@ import { UserProfile, BarInfo } from '@/types/bar';
 export const useProfileActions = (barInfo: BarInfo | null, userId: string | null, setUserProfile: (profile: UserProfile | null) => void) => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  // Track user presence
+  const trackPresence = async (barId: string, userId: string, name: string, status: 'online' | 'offline') => {
+    if (!barId || !userId) return;
+    
+    const presenceChannelName = `presence:bar:${barId}`;
+    const presenceChannel = supabase.channel(presenceChannelName);
+    
+    if (status === 'online') {
+      await presenceChannel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          // Track the user's presence when they join
+          const presenceTrackStatus = await presenceChannel.track({
+            userId,
+            name,
+            status: 'online',
+            lastSeen: new Date().toISOString()
+          });
+          console.log('Presence tracked:', presenceTrackStatus);
+        }
+      });
+    } else {
+      // When user leaves, we don't need to set status to offline
+      // as the presence system will automatically handle that
+      // when the subscription is removed
+      supabase.removeChannel(presenceChannel);
+    }
+  };
 
   // Create a profile in the bar
   const createProfile = async (profile: UserProfile) => {
@@ -40,6 +68,11 @@ export const useProfileActions = (barInfo: BarInfo | null, userId: string | null
       }
       
       setUserProfile(profile);
+      
+      // Start tracking presence
+      if (barInfo) {
+        trackPresence(barInfo.barId, newUserId, profile.name, 'online');
+      }
       
       toast({
         title: "Perfil criado!",
@@ -76,6 +109,11 @@ export const useProfileActions = (barInfo: BarInfo | null, userId: string | null
 
   // Leave the bar
   const leaveBar = () => {
+    // Set presence to offline
+    if (barInfo && userId) {
+      trackPresence(barInfo.barId, userId, '', 'offline');
+    }
+    
     // Remove profile from database
     if (userId) {
       supabase.from('bar_profiles').delete().eq('id', userId).then(({ error }) => {
