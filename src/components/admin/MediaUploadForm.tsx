@@ -4,11 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { FileImage, Upload, X } from 'lucide-react';
 import FormSection from './FormSection';
-
-interface PhotoFile {
-  file: File;
-  preview: string;
-}
+import { PhotoFile } from '@/hooks/useMediaUpload';
 
 interface MediaUploadFormProps {
   logoFile: File | null;
@@ -16,7 +12,6 @@ interface MediaUploadFormProps {
   setLogoFile: (file: File | null) => void;
   setLogoPreview: (preview: string) => void;
   photos: PhotoFile[];
-  setPhotos: React.Dispatch<React.SetStateAction<PhotoFile[]>>;
   handleLogoChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handlePhotoChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   removePhoto: (index: number) => void;
