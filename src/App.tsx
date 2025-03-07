@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Admin from "./pages/Admin";
+import BarMonitor from "./pages/BarMonitor";
 import JoinBar from "./pages/JoinBar";
 import TableChat from "./pages/TableChat";
 import UserChat from "./pages/UserChat";
@@ -22,6 +23,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/barmonitor" element={<BarMonitor />} />
           <Route path="/bar/:barId" element={<JoinBar />} />
           <Route path="/bar/:barId/table/:tableId" element={<TableChat />} />
           <Route path="/bar/:barId/chat/:userId" element={<UserChat />} />

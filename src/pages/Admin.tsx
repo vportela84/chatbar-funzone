@@ -1,51 +1,18 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { QrCode, FileImage, Upload, Plus, X } from 'lucide-react';
+import { FileImage, Upload, X } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
-import AdminDashboard from '@/components/AdminDashboard';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { useNavigate } from 'react-router-dom';
 import {
   RadioGroup,
   RadioGroupItem,
 } from "@/components/ui/radio-group";
-
-interface Bar {
-  id: string;
-  name: string;
-  owner_name?: string;
-  document?: string;
-  address: string;
-  number?: string;
-  neighborhood?: string;
-  city: string;
-  state?: string;
-  phone?: string;
-  email?: string;
-  login?: string;
-  subscription_plan?: string;
-  description?: string;
-  logo_url?: string;
-  qr_code?: string;
-}
 
 interface PhotoFile {
   file: File;
@@ -53,7 +20,7 @@ interface PhotoFile {
 }
 
 const Admin = () => {
-  const [bars, setBars] = useState<Bar[]>([]);
+  const navigate = useNavigate();
   const [name, setName] = useState('');
   const [ownerName, setOwnerName] = useState('');
   const [document, setDocument] = useState('');
@@ -70,35 +37,9 @@ const Admin = () => {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>('');
   const [photos, setPhotos] = useState<PhotoFile[]>([]);
-  const [showQRCode, setShowQRCode] = useState(false);
-  const [selectedQRCode, setSelectedQRCode] = useState<string>('');
   const { toast } = useToast();
   const logoInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
-
-  const loadBars = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('bars')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      if (data) setBars(data);
-    } catch (error) {
-      console.error('Erro ao carregar bares:', error);
-      toast({
-        title: "Erro ao carregar bares",
-        description: "Não foi possível carregar a lista de bares.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  useEffect(() => {
-    loadBars();
-    console.log("Página Admin carregada");
-  }, []);
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -238,20 +179,19 @@ const Admin = () => {
         // Envia email com senha para o cliente (simulação - precisaria integrar com serviço de email)
         if (email) {
           console.log(`Email seria enviado para ${email} com senha temporária`);
-          // Implementação futura: conectar com serviço de envio de emails
         }
-
-        await loadBars(); // Recarrega a lista de bares
+        
         resetForm();
         
-        // Mostra o QR Code automaticamente após criar o bar
-        setSelectedQRCode(qrCodeUrl);
-        setShowQRCode(true);
-
         toast({
           title: "Bar cadastrado com sucesso!",
-          description: "O QR Code foi gerado automaticamente e um email será enviado ao responsável.",
+          description: "Seu novo bar foi cadastrado e já está disponível para monitoramento.",
         });
+        
+        // Redireciona para a página de monitoramento
+        setTimeout(() => {
+          navigate('/barmonitor');
+        }, 2000);
       }
     } catch (error: any) {
       console.error('Erro ao cadastrar bar:', error);
@@ -282,9 +222,8 @@ const Admin = () => {
     setPhotos([]);
   };
 
-  const handleShowQRCode = (qrCode: string) => {
-    setSelectedQRCode(qrCode);
-    setShowQRCode(true);
+  const goToMonitoring = () => {
+    navigate('/barmonitor');
   };
 
   return (
@@ -294,6 +233,12 @@ const Admin = () => {
           <h1 className="text-4xl font-bold text-primary mb-2">Bar Match</h1>
           <p className="text-2xl text-bar-text/80">Área Administrativa</p>
         </header>
+
+        <div className="flex justify-end mb-4">
+          <Button onClick={goToMonitoring} variant="outline" className="bg-primary/10">
+            Monitorar Bares
+          </Button>
+        </div>
 
         <div className="grid grid-cols-1 gap-8">
           <Card className="bg-bar-bg border-primary/20">
@@ -581,86 +526,7 @@ const Admin = () => {
               </form>
             </CardContent>
           </Card>
-
-          {/* Lista de Bares Cadastrados */}
-          <Card className="bg-bar-bg border-primary/20">
-            <CardHeader>
-              <CardTitle className="text-primary">Bares Cadastrados</CardTitle>
-              <CardDescription className="text-primary/70">Lista de todos os bares cadastrados</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {bars.length === 0 ? (
-                  <p className="text-center text-primary/70">Nenhum bar cadastrado ainda.</p>
-                ) : (
-                  bars.map((bar) => (
-                    <Card key={bar.id} className="bg-black/20 border-primary/10">
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex gap-4 items-center">
-                            {bar.logo_url && (
-                              <div className="w-12 h-12 overflow-hidden rounded-md">
-                                <img 
-                                  src={bar.logo_url} 
-                                  alt={`Logo ${bar.name}`} 
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                            )}
-                            <div>
-                              <h3 className="font-medium text-primary">{bar.name}</h3>
-                              <p className="text-sm text-primary/70">
-                                {bar.address}
-                                {bar.number && `, ${bar.number}`}
-                                {bar.city && `, ${bar.city}`}
-                                {bar.state && `/${bar.state}`}
-                              </p>
-                              {bar.phone && <p className="text-xs text-primary/60">{bar.phone}</p>}
-                            </div>
-                          </div>
-                          {bar.qr_code && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleShowQRCode(bar.qr_code!)}
-                              className="flex items-center gap-2"
-                            >
-                              <QrCode className="w-4 h-4" />
-                              Ver QR Code
-                            </Button>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <AdminDashboard />
         </div>
-
-        <Dialog open={showQRCode} onOpenChange={setShowQRCode}>
-          <DialogContent className="bg-bar-bg border-primary/20">
-            <DialogHeader>
-              <DialogTitle className="text-primary">QR Code do Bar</DialogTitle>
-              <DialogDescription className="text-primary/70">
-                Compartilhe este QR Code com seus clientes
-              </DialogDescription>
-            </DialogHeader>
-            <div className="p-6 bg-white rounded-lg">
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(selectedQRCode)}`}
-                alt="QR Code"
-                className="mx-auto"
-              />
-            </div>
-            <p className="text-center text-sm text-primary mt-2">
-              {selectedQRCode}
-            </p>
-          </DialogContent>
-        </Dialog>
       </div>
     </div>
   );

@@ -12,6 +12,7 @@ interface Profile {
   tableId: string;
   barId: string;
   photo?: string;
+  interest?: string;
 }
 
 interface Bar {
@@ -48,7 +49,8 @@ const AdminDashboard = () => {
             phone: profile.phone || '',
             tableId: profile.table_id,
             barId: profile.bar_id,
-            photo: profile.photo
+            photo: profile.photo,
+            interest: profile.interest
           }))
       }));
 
@@ -103,6 +105,12 @@ const AdminDashboard = () => {
                           <div>
                             <p className="font-medium text-primary/90">{profile.name}</p>
                             <p className="text-sm text-primary/70">Mesa {profile.tableId}</p>
+                            {profile.interest && (
+                              <p className="text-sm text-primary/70">
+                                Interesse: {profile.interest === 'men' ? 'Homens' : 
+                                           profile.interest === 'women' ? 'Mulheres' : 'Todos'}
+                              </p>
+                            )}
                             {profile.phone && (
                               <p className="text-sm text-primary/70">{profile.phone}</p>
                             )}
