@@ -15,6 +15,7 @@ const TableChat = () => {
     userProfile,
     connectedUsers,
     isLoading,
+    userId,
     createProfile,
     startChat,
     leaveBar
@@ -47,6 +48,7 @@ const TableChat = () => {
         users={connectedUsers}
         isLoading={isLoading}
         onStartChat={startChat}
+        currentUserId={userId || undefined}
       />
       
       <div className="text-center">
