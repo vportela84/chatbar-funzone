@@ -59,10 +59,19 @@ export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) =
         return false;
       }
 
-      // Corrigindo o erro TS2339 - Convertendo data para o tipo apropriado
-      const authResult = data as { authenticated: boolean; user?: AdminUser };
-
-      if (!authResult.authenticated) {
+      // Corrigindo o erro TS2352 - Convertendo data explicitamente para o tipo esperado após verificar que é um objeto
+      if (!data || typeof data !== 'object') {
+        toast({
+          title: "Erro de autenticação",
+          description: "Resposta inválida do servidor",
+          variant: "destructive"
+        });
+        return false;
+      }
+      
+      // Validação segura dos dados recebidos
+      const authData = data as any;
+      if (!authData.authenticated) {
         toast({
           title: "Credenciais inválidas",
           description: "Email ou senha incorretos",
@@ -72,7 +81,7 @@ export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) =
       }
 
       // Usuário autenticado com sucesso
-      const user = authResult.user;
+      const user = authData.user;
       if (!user) {
         toast({
           title: "Erro de autenticação",
@@ -82,14 +91,21 @@ export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) =
         return false;
       }
       
-      setAdminUser(user);
+      // Garantir que user tem a estrutura esperada
+      const adminUser: AdminUser = {
+        id: user.id,
+        email: user.email,
+        role: user.role
+      };
+      
+      setAdminUser(adminUser);
       
       // Salvar na sessão
-      localStorage.setItem('admin_user', JSON.stringify(user));
+      localStorage.setItem('admin_user', JSON.stringify(adminUser));
       
       toast({
         title: "Login realizado com sucesso",
-        description: `Bem-vindo, ${user.email}!`
+        description: `Bem-vindo, ${adminUser.email}!`
       });
       
       return true;
