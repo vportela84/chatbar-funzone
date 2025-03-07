@@ -4,7 +4,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
-import { Users } from 'lucide-react';
+import { Users, RefreshCcw } from 'lucide-react';
+import { Button } from "@/components/ui/button";
 
 interface Profile {
   name: string;
@@ -13,6 +14,7 @@ interface Profile {
   barId: string;
   photo?: string;
   interest?: string;
+  online?: boolean;
 }
 
 interface Bar {
@@ -23,10 +25,12 @@ interface Bar {
 
 const AdminDashboard = () => {
   const [bars, setBars] = useState<Bar[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   const loadBarsAndProfiles = async () => {
     try {
+      setIsLoading(true);
       const { data: barsData, error: barsError } = await supabase
         .from('bars')
         .select('*');
@@ -50,7 +54,8 @@ const AdminDashboard = () => {
             tableId: profile.table_id,
             barId: profile.bar_id,
             photo: profile.photo,
-            interest: profile.interest
+            interest: profile.interest,
+            online: profile.online || false
           }))
       }));
 
@@ -62,6 +67,8 @@ const AdminDashboard = () => {
         description: "Não foi possível carregar as informações dos bares",
         variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -72,43 +79,83 @@ const AdminDashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const translateInterest = (interest: string) => {
+    switch (interest) {
+      case 'men':
+        return 'Homens';
+      case 'women':
+        return 'Mulheres';
+      case 'all':
+      default:
+        return 'Todos';
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-primary mb-4">Dashboard de Usuários</h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-primary mb-4 flex items-center">
+          <Users className="mr-2 h-5 w-5" /> Dashboard de Usuários
+        </h2>
+        <Button 
+          onClick={loadBarsAndProfiles} 
+          variant="outline" 
+          size="sm"
+          className="bg-primary/10 hover:bg-primary/20"
+          disabled={isLoading}
+        >
+          <RefreshCcw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} /> 
+          {isLoading ? 'Atualizando...' : 'Atualizar'}
+        </Button>
+      </div>
+      
       {bars.length === 0 ? (
-        <Card className="bg-bar-bg border-primary/20">
+        <Card className="bg-bar-bg/50 backdrop-blur-sm border-primary/20 shadow-lg">
           <CardContent className="p-6">
             <p className="text-center text-primary/70">Nenhum bar cadastrado ainda.</p>
           </CardContent>
         </Card>
       ) : (
         bars.map(bar => (
-          <Card key={bar.id} className="bg-bar-bg border-primary/20">
-            <CardHeader>
+          <Card key={bar.id} className="bg-bar-bg/50 backdrop-blur-sm border-primary/20 shadow-lg hover:shadow-xl transition-all duration-300">
+            <CardHeader className="bg-black/20 rounded-t-lg">
               <div className="flex justify-between items-center">
                 <CardTitle className="text-primary">{bar.name}</CardTitle>
-                <Badge variant="outline" className="flex items-center gap-2 text-primary">
+                <Badge variant="outline" className="flex items-center gap-2 text-primary bg-primary/10">
                   <Users className="w-4 h-4" />
                   {bar.profiles.length} online
                 </Badge>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 md:p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {bar.profiles.length === 0 ? (
                   <p className="text-primary/70 col-span-full">Nenhum usuário online no momento.</p>
                 ) : (
                   bar.profiles.map((profile, index) => (
-                    <Card key={`${profile.tableId}-${index}`} className="bg-black/20 border-primary/10">
+                    <Card key={`${profile.tableId}-${index}`} className="bg-black/40 backdrop-blur-sm border-primary/10 hover:bg-black/50 transition-colors">
                       <CardContent className="p-4">
                         <div className="flex items-center space-x-4">
+                          <div className={`w-12 h-12 rounded-full flex items-center justify-center text-primary ${profile.online ? 'bg-green-500/20 border-2 border-green-500' : 'bg-primary/20'}`}>
+                            {profile.photo ? (
+                              <img 
+                                src={profile.photo} 
+                                alt={profile.name} 
+                                className="w-12 h-12 rounded-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-xl font-bold">{profile.name.charAt(0).toUpperCase()}</span>
+                            )}
+                          </div>
                           <div>
-                            <p className="font-medium text-primary/90">{profile.name}</p>
+                            <div className="flex items-center">
+                              <p className="font-medium text-primary/90">{profile.name}</p>
+                              <span className={`ml-2 w-2 h-2 rounded-full ${profile.online ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                            </div>
                             <p className="text-sm text-primary/70">Mesa {profile.tableId}</p>
                             {profile.interest && (
                               <p className="text-sm text-primary/70">
-                                Interesse: {profile.interest === 'men' ? 'Homens' : 
-                                           profile.interest === 'women' ? 'Mulheres' : 'Todos'}
+                                Interesse: {translateInterest(profile.interest)}
                               </p>
                             )}
                             {profile.phone && (
