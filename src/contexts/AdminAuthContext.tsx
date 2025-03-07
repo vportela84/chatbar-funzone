@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 
 interface AdminUser {
   id: string;
@@ -59,7 +59,10 @@ export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) =
         return false;
       }
 
-      if (!data.authenticated) {
+      // Corrigindo o erro TS2339 - Convertendo data para o tipo apropriado
+      const authResult = data as { authenticated: boolean; user?: AdminUser };
+
+      if (!authResult.authenticated) {
         toast({
           title: "Credenciais inválidas",
           description: "Email ou senha incorretos",
@@ -69,7 +72,16 @@ export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) =
       }
 
       // Usuário autenticado com sucesso
-      const user = data.user;
+      const user = authResult.user;
+      if (!user) {
+        toast({
+          title: "Erro de autenticação",
+          description: "Não foi possível obter os dados do usuário",
+          variant: "destructive"
+        });
+        return false;
+      }
+      
       setAdminUser(user);
       
       // Salvar na sessão
