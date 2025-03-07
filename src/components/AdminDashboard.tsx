@@ -14,7 +14,7 @@ interface Profile {
   barId: string;
   photo?: string;
   interest?: string;
-  online?: boolean;
+  isOnline?: boolean; // Mudando de 'online' para 'isOnline' para evitar conflitos
 }
 
 interface Bar {
@@ -43,6 +43,8 @@ const AdminDashboard = () => {
 
       if (profilesError) throw profilesError;
 
+      // Vamos considerar que todos os usuários presentes na lista estão online
+      // No futuro, podemos integrar com a funcionalidade de presença do Supabase
       const barsWithProfiles = barsData.map(bar => ({
         id: bar.id,
         name: bar.name,
@@ -55,7 +57,7 @@ const AdminDashboard = () => {
             barId: profile.bar_id,
             photo: profile.photo,
             interest: profile.interest,
-            online: profile.online || false
+            isOnline: true // Definindo todos como online por enquanto
           }))
       }));
 
@@ -136,7 +138,7 @@ const AdminDashboard = () => {
                     <Card key={`${profile.tableId}-${index}`} className="bg-black/40 backdrop-blur-sm border-primary/10 hover:bg-black/50 transition-colors">
                       <CardContent className="p-4">
                         <div className="flex items-center space-x-4">
-                          <div className={`w-12 h-12 rounded-full flex items-center justify-center text-primary ${profile.online ? 'bg-green-500/20 border-2 border-green-500' : 'bg-primary/20'}`}>
+                          <div className={`w-12 h-12 rounded-full flex items-center justify-center text-primary ${profile.isOnline ? 'bg-green-500/20 border-2 border-green-500' : 'bg-primary/20'}`}>
                             {profile.photo ? (
                               <img 
                                 src={profile.photo} 
@@ -150,7 +152,7 @@ const AdminDashboard = () => {
                           <div>
                             <div className="flex items-center">
                               <p className="font-medium text-primary/90">{profile.name}</p>
-                              <span className={`ml-2 w-2 h-2 rounded-full ${profile.online ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                              <span className={`ml-2 w-2 h-2 rounded-full ${profile.isOnline ? 'bg-green-500' : 'bg-gray-400'}`}></span>
                             </div>
                             <p className="text-sm text-primary/70">Mesa {profile.tableId}</p>
                             {profile.interest && (
