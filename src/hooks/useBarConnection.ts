@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,6 +22,7 @@ interface ConnectedUser {
   name: string;
   table_id: string;
   photo?: string;
+  interest: string;
 }
 
 export const useBarConnection = (barId?: string, tableId?: string) => {
@@ -91,8 +91,61 @@ export const useBarConnection = (barId?: string, tableId?: string) => {
     
     if (barInfo && userProfile) {
       fetchConnectedUsers();
+      
+      // Configurar canal de tempo real para atualizações de usuários conectados
+      const channel = supabase
+        .channel('bar_profiles_changes')
+        .on('postgres_changes', {
+          event: '*', // Receber eventos de INSERT, UPDATE e DELETE
+          schema: 'public',
+          table: 'bar_profiles',
+          filter: `bar_id=eq.${barInfo.barId}`
+        }, (payload) => {
+          console.log('Mudança em perfis:', payload);
+          
+          // Quando um novo usuário entrar (INSERT)
+          if (payload.eventType === 'INSERT') {
+            const newUser = payload.new as ConnectedUser;
+            setConnectedUsers(current => {
+              // Verificar se o usuário já está na lista para evitar duplicações
+              const userExists = current.some(user => user.id === newUser.id);
+              if (userExists) return current;
+              return [...current, newUser];
+            });
+            
+            // Mostrar notificação de novo usuário
+            if (newUser.id !== userId) {
+              toast({
+                title: "Novo usuário",
+                description: `${newUser.name} entrou no bar`
+              });
+            }
+          }
+          
+          // Quando um usuário sair (DELETE)
+          else if (payload.eventType === 'DELETE') {
+            const deletedUser = payload.old as ConnectedUser;
+            setConnectedUsers(current => 
+              current.filter(user => user.id !== deletedUser.id)
+            );
+          }
+          
+          // Quando um usuário atualizar seu perfil (UPDATE)
+          else if (payload.eventType === 'UPDATE') {
+            const updatedUser = payload.new as ConnectedUser;
+            setConnectedUsers(current => 
+              current.map(user => user.id === updatedUser.id ? updatedUser : user)
+            );
+          }
+        })
+        .subscribe();
+      
+      // Limpar o canal quando o componente for desmontado
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
-  }, [barInfo, toast, userProfile]);
+  }, [barInfo, toast, userProfile, userId]);
 
   // Create a profile in the bar
   const createProfile = async (profile: UserProfile) => {
