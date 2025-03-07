@@ -1,10 +1,12 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { QrCode } from 'lucide-react';
+import { QrCode, LogOut, LayoutDashboard } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import AdminDashboard from '@/components/AdminDashboard';
 import {
   Dialog,
@@ -29,6 +31,8 @@ const BarMonitor = () => {
   const [showQRCode, setShowQRCode] = useState(false);
   const [selectedQRCode, setSelectedQRCode] = useState<string>('');
   const { toast } = useToast();
+  const { logout } = useAdminAuth();
+  const navigate = useNavigate();
 
   React.useEffect(() => {
     loadBars();
@@ -59,6 +63,15 @@ const BarMonitor = () => {
     setShowQRCode(true);
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate('/admin-login');
+  };
+
+  const goToAdmin = () => {
+    navigate('/admin');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-bar-bg to-black text-bar-text p-6">
       <div className="max-w-6xl mx-auto space-y-8">
@@ -66,6 +79,15 @@ const BarMonitor = () => {
           <h1 className="text-4xl font-bold text-primary mb-2">Bar Match</h1>
           <p className="text-2xl text-bar-text/80">Monitoramento de Bares</p>
         </header>
+
+        <div className="flex justify-between mb-4">
+          <Button onClick={goToAdmin} variant="outline" className="bg-primary/10">
+            <LayoutDashboard className="mr-2 h-4 w-4" /> Cadastrar Bar
+          </Button>
+          <Button onClick={handleLogout} variant="outline" className="bg-primary/10">
+            <LogOut className="mr-2 h-4 w-4" /> Sair
+          </Button>
+        </div>
 
         <div className="grid grid-cols-1 gap-8">
           {/* Lista de Bares Cadastrados */}

@@ -1,14 +1,15 @@
 
 import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { FileImage, Upload, X } from 'lucide-react';
+import { FileImage, Upload, X, LogOut, BarChart2 } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from 'react-router-dom';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
   RadioGroup,
   RadioGroupItem,
@@ -21,6 +22,7 @@ interface PhotoFile {
 
 const Admin = () => {
   const navigate = useNavigate();
+  const { logout } = useAdminAuth();
   const [name, setName] = useState('');
   const [ownerName, setOwnerName] = useState('');
   const [document, setDocument] = useState('');
@@ -226,6 +228,11 @@ const Admin = () => {
     navigate('/barmonitor');
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate('/admin-login');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-bar-bg to-black text-bar-text p-6">
       <div className="max-w-6xl mx-auto space-y-8">
@@ -234,9 +241,12 @@ const Admin = () => {
           <p className="text-2xl text-bar-text/80">Área Administrativa</p>
         </header>
 
-        <div className="flex justify-end mb-4">
+        <div className="flex justify-between mb-4">
           <Button onClick={goToMonitoring} variant="outline" className="bg-primary/10">
-            Monitorar Bares
+            <BarChart2 className="mr-2 h-4 w-4" /> Monitorar Bares
+          </Button>
+          <Button onClick={handleLogout} variant="outline" className="bg-primary/10">
+            <LogOut className="mr-2 h-4 w-4" /> Sair
           </Button>
         </div>
 
