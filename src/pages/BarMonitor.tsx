@@ -90,7 +90,7 @@ const BarMonitor = () => {
               <Button 
                 onClick={loadBars} 
                 variant="outline" 
-                className="bg-primary/10 hover:bg-primary/20 transition-all"
+                className="bg-primary text-black hover:bg-primary/80 transition-all"
                 disabled={isRefreshing}
               >
                 <RefreshCcw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} /> 
@@ -99,14 +99,14 @@ const BarMonitor = () => {
               <Button 
                 onClick={goToAdmin} 
                 variant="outline" 
-                className="bg-primary/10 hover:bg-primary/20 transition-all"
+                className="bg-primary text-black hover:bg-primary/80 transition-all"
               >
                 <LayoutDashboard className="mr-2 h-4 w-4" /> Cadastrar Bar
               </Button>
               <Button 
                 onClick={handleLogout} 
                 variant="outline" 
-                className="bg-primary/10 hover:bg-primary/20 transition-all"
+                className="bg-primary text-black hover:bg-primary/80 transition-all"
               >
                 <LogOut className="mr-2 h-4 w-4" /> Sair
               </Button>
@@ -122,7 +122,7 @@ const BarMonitor = () => {
                 <CardTitle className="text-primary flex items-center">
                   <Users className="mr-2 h-5 w-5" /> Bares Cadastrados
                 </CardTitle>
-                <Badge variant="outline" className="bg-primary/10 text-primary">
+                <Badge variant="outline" className="bg-primary text-black">
                   {bars.length} {bars.length === 1 ? 'bar' : 'bares'}
                 </Badge>
               </div>
@@ -135,7 +135,7 @@ const BarMonitor = () => {
                     <Button 
                       onClick={goToAdmin} 
                       variant="default" 
-                      className="bg-primary hover:bg-primary/90"
+                      className="bg-primary text-black hover:bg-primary/80"
                     >
                       <LayoutDashboard className="mr-2 h-4 w-4" /> Cadastrar Seu Primeiro Bar
                     </Button>
@@ -174,7 +174,7 @@ const BarMonitor = () => {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleShowQRCode(bar.qr_code!)}
-                                className="flex items-center gap-2 bg-primary/10 hover:bg-primary/20 transition-all self-end sm:self-center mt-2 sm:mt-0"
+                                className="flex items-center gap-2 bg-primary text-black hover:bg-primary/80 transition-all self-end sm:self-center mt-2 sm:mt-0"
                               >
                                 <QrCode className="w-4 h-4" />
                                 QR Code
@@ -222,7 +222,7 @@ const BarMonitor = () => {
                   });
                 }}
                 variant="outline"
-                className="bg-primary/10 hover:bg-primary/20"
+                className="bg-primary text-black hover:bg-primary/80"
               >
                 Copiar Link
               </Button>

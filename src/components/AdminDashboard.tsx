@@ -103,7 +103,7 @@ const AdminDashboard = () => {
           onClick={loadBarsAndProfiles} 
           variant="outline" 
           size="sm"
-          className="bg-primary/10 hover:bg-primary/20"
+          className="bg-primary text-black hover:bg-primary/80"
           disabled={isLoading}
         >
           <RefreshCcw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} /> 
@@ -123,7 +123,7 @@ const AdminDashboard = () => {
             <CardHeader className="bg-black/20 rounded-t-lg">
               <div className="flex justify-between items-center">
                 <CardTitle className="text-primary">{bar.name}</CardTitle>
-                <Badge variant="outline" className="flex items-center gap-2 text-primary bg-primary/10">
+                <Badge variant="outline" className="flex items-center gap-2 text-black bg-primary">
                   <Users className="w-4 h-4" />
                   {bar.profiles.length} online
                 </Badge>
