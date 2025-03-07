@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
 import BarMonitor from "./pages/BarMonitor";
+import BarAccess from "./pages/BarAccess";
 import JoinBar from "./pages/JoinBar";
 import TableChat from "./pages/TableChat";
 import UserChat from "./pages/UserChat";
@@ -27,6 +28,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/admin-login" element={<AdminLogin />} />
+            <Route path="/bar-access" element={<BarAccess />} />
             <Route 
               path="/admin" 
               element={
