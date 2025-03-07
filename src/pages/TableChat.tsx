@@ -6,6 +6,7 @@ import ProfileSetup from '@/components/ProfileSetup';
 import BarHeader from '@/components/table/BarHeader';
 import ConnectedUsersList from '@/components/table/ConnectedUsersList';
 import { useBarConnection } from '@/hooks/useBarConnection';
+import TableChatLayout from '@/components/layouts/TableChatLayout';
 
 const TableChat = () => {
   const { barId, tableId } = useParams();
@@ -21,42 +22,42 @@ const TableChat = () => {
 
   if (!barInfo) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-bar-bg to-black text-primary p-6">
-        Carregando...
-      </div>
+      <TableChatLayout>
+        <div className="flex items-center justify-center h-full">
+          Carregando...
+        </div>
+      </TableChatLayout>
     );
   }
 
   // If user hasn't set up a profile yet, show profile setup form
   if (!userProfile) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-bar-bg to-black text-primary p-6">
-        <ProfileSetup onComplete={createProfile} barInfo={barInfo} />
-      </div>
+      <TableChatLayout>
+        <div className="flex items-center justify-center">
+          <ProfileSetup onComplete={createProfile} barInfo={barInfo} />
+        </div>
+      </TableChatLayout>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-bar-bg to-black text-primary p-6">
-      <BarHeader barName={barInfo.barName} tableNumber={barInfo.tableNumber} />
+    <TableChatLayout barName={barInfo.barName} tableNumber={barInfo.tableNumber}>
+      <ConnectedUsersList 
+        users={connectedUsers}
+        isLoading={isLoading}
+        onStartChat={startChat}
+      />
       
-      <main className="flex-1 container mx-auto">
-        <ConnectedUsersList 
-          users={connectedUsers}
-          isLoading={isLoading}
-          onStartChat={startChat}
-        />
-        
-        <div className="text-center">
-          <Button
-            onClick={leaveBar}
-            variant="outline"
-          >
-            Sair do Bar
-          </Button>
-        </div>
-      </main>
-    </div>
+      <div className="text-center">
+        <Button
+          onClick={leaveBar}
+          variant="outline"
+        >
+          Sair do Bar
+        </Button>
+      </div>
+    </TableChatLayout>
   );
 };
 

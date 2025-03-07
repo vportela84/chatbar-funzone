@@ -6,6 +6,7 @@ import ChatHeader from '@/components/chat/ChatHeader';
 import ChatMessageList from '@/components/chat/ChatMessageList';
 import ChatInput from '@/components/chat/ChatInput';
 import { useChat, type ChatTarget } from '@/hooks/useChat';
+import TableChatLayout from '@/components/layouts/TableChatLayout';
 
 const UserChat = () => {
   const { barId } = useParams();
@@ -41,17 +42,19 @@ const UserChat = () => {
 
   if (!chatTarget) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-bar-bg to-black text-primary p-4">
-        Carregando...
-      </div>
+      <TableChatLayout>
+        <div className="flex items-center justify-center h-full">
+          Carregando...
+        </div>
+      </TableChatLayout>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-bar-bg to-black text-primary p-4 sm:p-6">
-      <ChatHeader chatTarget={chatTarget} onBack={handleBackToUsers} />
-      
-      <main className="flex-1 mx-auto flex flex-col w-full max-w-md">
+    <TableChatLayout barName={chatTarget.barName}>
+      <div className="mx-auto flex flex-col w-full max-w-md">
+        <ChatHeader chatTarget={chatTarget} onBack={handleBackToUsers} />
+        
         <Card className="bg-bar-bg border-primary/20 mb-4 flex-1 flex flex-col">
           <CardHeader className="py-3 px-4">
             <CardTitle className="text-primary text-lg">Mensagens</CardTitle>
@@ -72,8 +75,8 @@ const UserChat = () => {
           onSend={sendMessage}
           isLoading={isLoading}
         />
-      </main>
-    </div>
+      </div>
+    </TableChatLayout>
   );
 };
 
