@@ -21,6 +21,10 @@ const TableChat = () => {
     leaveBar
   } = useBarConnection(barId, tableId);
 
+  console.log('TableChat render - BarInfo:', barInfo);
+  console.log('TableChat render - UserProfile:', userProfile);
+  console.log('TableChat render - ConnectedUsers:', connectedUsers);
+
   if (!barInfo) {
     return (
       <TableChatLayout>
