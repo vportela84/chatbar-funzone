@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from '@/hooks/use-toast';
@@ -53,10 +52,10 @@ export const useProfileData = () => {
 
       console.log('Dados de perfis carregados:', profilesData);
 
-      const barsWithProfiles = barsData.map(bar => ({
-        id: bar.id,
-        name: bar.name,
-        profiles: profilesData
+      // Inicializar os bares com os usuários e seus estados de presença
+      const barsWithProfiles = barsData.map(bar => {
+        // Filtrar perfis para este bar
+        const barProfiles = profilesData
           .filter(profile => profile.bar_id === bar.id || profile.uuid_bar_id === bar.id)
           .map(profile => ({
             name: profile.name,
@@ -65,12 +64,48 @@ export const useProfileData = () => {
             barId: profile.bar_id || profile.uuid_bar_id,
             photo: profile.photo,
             interest: profile.interest,
-            isOnline: true
-          }))
-      }));
+            isOnline: false // Inicialmente, todos estão offline
+          }));
+
+        return {
+          id: bar.id,
+          name: bar.name,
+          profiles: barProfiles
+        };
+      });
 
       console.log('Bares com perfis inicializados:', barsWithProfiles);
       setBars(barsWithProfiles);
+
+      // Configurar canais de presença para cada bar
+      barsWithProfiles.forEach(bar => {
+        const presenceChannel = supabase.channel(`presence:bar:${bar.id}`);
+        
+        presenceChannel
+          .on('presence', { event: 'sync' }, () => {
+            const presenceState = presenceChannel.presenceState();
+            console.log(`Estado de presença para bar ${bar.id}:`, presenceState);
+            
+            // Atualizar estado online dos usuários
+            setBars(currentBars => {
+              return currentBars.map(currentBar => {
+                if (currentBar.id !== bar.id) return currentBar;
+                
+                return {
+                  ...currentBar,
+                  profiles: currentBar.profiles.map(profile => ({
+                    ...profile,
+                    isOnline: Object.values(presenceState)
+                      .flat()
+                      .some((presence: any) => presence.userId === profile.barId)
+                  }))
+                };
+              });
+            });
+          })
+          .subscribe();
+      });
+
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       toast({
@@ -215,16 +250,12 @@ export const useProfileData = () => {
         console.log('Perfil removido via Supabase Realtime:', payload);
         updateBarsWithRemovedProfile(payload.old);
       })
-      .subscribe((status) => {
-        console.log('Status da inscrição do canal Supabase:', status);
-      });
-
-    console.log('Canal de Supabase inscrito para atualizações em tempo real');
+      .subscribe();
 
     // Limpar canal ao desmontar o componente
     return () => {
-      console.log('Limpando canal de Supabase');
-      supabase.removeChannel(channel);
+      console.log('Limpando canais de Supabase');
+      supabase.removeAllChannels();
     };
   }, []);
 
