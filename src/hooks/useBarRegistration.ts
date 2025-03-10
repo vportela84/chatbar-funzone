@@ -101,7 +101,8 @@ export const useBarRegistration = ({
       if (error) throw error;
 
       if (data) {
-        const qrCodeUrl = `https://barmatch.app/join/${data.id}`;
+        // Alterando a URL do QR code para o formato solicitado
+        const qrCodeUrl = `https://chatbar-funzone.lovable.app/bar/${data.id}`;
         
         // Atualiza o bar com o QR code
         const { error: updateError } = await supabase
