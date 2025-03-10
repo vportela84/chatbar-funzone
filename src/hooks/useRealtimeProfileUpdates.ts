@@ -17,56 +17,63 @@ export const useRealtimeProfileUpdates = (
   useEffect(() => {
     if (!barId) return;
 
-    console.log(`Configurando atualizações em tempo real para bar ${barId} e usuário ${userId || 'não autenticado'}`);
+    // Verificar formato do barId
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(barId);
+    console.log(`Configurando atualizações em tempo real para bar ${barId} (UUID: ${isUUID}) e usuário ${userId || 'não autenticado'}`);
 
-    // Criar dois canais separados para bar_id e uuid_bar_id
-    const barIdChannel = supabase
-      .channel('bar_id_changes')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'bar_profiles',
-        filter: `bar_id=eq.${barId}`
-      }, (payload) => {
-        console.log('Novo perfil detectado via Supabase Realtime (bar_id):', payload);
-        handleNewProfile(payload);
-      })
-      .on('postgres_changes', {
-        event: 'DELETE',
-        schema: 'public',
-        table: 'bar_profiles',
-        filter: `bar_id=eq.${barId}`
-      }, (payload) => {
-        console.log('Usuário removido via Supabase Realtime (bar_id):', payload);
-        handleDeletedProfile(payload);
-      })
-      .subscribe((status) => {
-        console.log('Status da inscrição no canal para bar_id:', status);
-      });
-
-    const uuidBarIdChannel = supabase
-      .channel('uuid_bar_id_changes')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'bar_profiles',
-        filter: `uuid_bar_id=eq.${barId}`
-      }, (payload) => {
-        console.log('Novo perfil detectado via Supabase Realtime (uuid_bar_id):', payload);
-        handleNewProfile(payload);
-      })
-      .on('postgres_changes', {
-        event: 'DELETE',
-        schema: 'public',
-        table: 'bar_profiles',
-        filter: `uuid_bar_id=eq.${barId}`
-      }, (payload) => {
-        console.log('Usuário removido via Supabase Realtime (uuid_bar_id):', payload);
-        handleDeletedProfile(payload);
-      })
-      .subscribe((status) => {
-        console.log('Status da inscrição no canal para uuid_bar_id:', status);
-      });
+    let channel;
+    
+    if (isUUID) {
+      // Se for UUID, monitorar alterações em uuid_bar_id
+      channel = supabase
+        .channel('uuid_bar_id_changes')
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'bar_profiles',
+          filter: `uuid_bar_id=eq.${barId}`
+        }, (payload) => {
+          console.log('Novo perfil detectado via Supabase Realtime (uuid_bar_id):', payload);
+          handleNewProfile(payload);
+        })
+        .on('postgres_changes', {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'bar_profiles',
+          filter: `uuid_bar_id=eq.${barId}`
+        }, (payload) => {
+          console.log('Usuário removido via Supabase Realtime (uuid_bar_id):', payload);
+          handleDeletedProfile(payload);
+        })
+        .subscribe((status) => {
+          console.log('Status da inscrição no canal para uuid_bar_id:', status);
+        });
+    } else {
+      // Se não for UUID, monitorar alterações em bar_id
+      channel = supabase
+        .channel('bar_id_changes')
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'bar_profiles',
+          filter: `bar_id=eq.${barId}`
+        }, (payload) => {
+          console.log('Novo perfil detectado via Supabase Realtime (bar_id):', payload);
+          handleNewProfile(payload);
+        })
+        .on('postgres_changes', {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'bar_profiles',
+          filter: `bar_id=eq.${barId}`
+        }, (payload) => {
+          console.log('Usuário removido via Supabase Realtime (bar_id):', payload);
+          handleDeletedProfile(payload);
+        })
+        .subscribe((status) => {
+          console.log('Status da inscrição no canal para bar_id:', status);
+        });
+    }
     
     // Funções auxiliares para processar eventos
     const handleNewProfile = (payload: any) => {
@@ -110,10 +117,11 @@ export const useRealtimeProfileUpdates = (
       }
     };
     
-    // Clean up channels when component unmounts
+    // Clean up channel when component unmounts
     return () => {
-      supabase.removeChannel(barIdChannel);
-      supabase.removeChannel(uuidBarIdChannel);
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
     };
   }, [barId, setConnectedUsers, toast, userId]);
 };

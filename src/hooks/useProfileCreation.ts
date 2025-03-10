@@ -11,8 +11,9 @@ export const useProfileCreation = () => {
       const newUserId = crypto.randomUUID();
       console.log('Criando novo perfil:', profileData);
       
-      // Verificar se o barId está no formato UUID
+      // Verificar formato do barId
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profileData.barId);
+      console.log('O barId é UUID?', isUUID, profileData.barId);
       
       // Criar objeto com os dados do perfil
       const profileToInsert = {
@@ -22,13 +23,14 @@ export const useProfileCreation = () => {
         photo: profileData.photo || null,
         interest: profileData.interest,
         table_id: profileData.tableId,
-        bar_id: isUUID ? null : profileData.barId,
-        uuid_bar_id: isUUID ? profileData.barId : null
+        // Se o barId for um UUID, salvar em uuid_bar_id, caso contrário em bar_id
+        uuid_bar_id: isUUID ? profileData.barId : null,
+        bar_id: !isUUID ? profileData.barId : null
       };
       
       console.log('Dados a serem inseridos:', profileToInsert);
       
-      const { error } = await supabase.from('bar_profiles').insert(profileToInsert);
+      const { error, data } = await supabase.from('bar_profiles').insert(profileToInsert).select();
       
       if (error) {
         console.error('Erro ao salvar perfil:', error);
@@ -40,6 +42,7 @@ export const useProfileCreation = () => {
         return null;
       }
       
+      console.log('Perfil criado com sucesso, dados retornados:', data);
       console.log('Perfil criado com sucesso, ID:', newUserId);
       toast({
         title: "Perfil criado!",

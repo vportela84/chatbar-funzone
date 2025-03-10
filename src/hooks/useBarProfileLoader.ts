@@ -22,50 +22,51 @@ export const useBarProfileLoader = () => {
       setIsLoading(true);
       console.log(`Carregando perfis para o bar: ${barId}`);
       
-      // Nova abordagem: duas consultas separadas e união dos resultados
-      const { data: dataNumeric, error: errorNumeric } = await supabase
-        .from('bar_profiles')
-        .select('*')
-        .eq('bar_id', barId);
+      // Verificar formato do barId
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(barId);
+      console.log('O barId na consulta é UUID?', isUUID, barId);
       
-      const { data: dataUuid, error: errorUuid } = await supabase
-        .from('bar_profiles')
-        .select('*')
-        .eq('uuid_bar_id', barId);
+      let profiles = [];
       
-      // Verificar erros em ambas as consultas
-      if (errorNumeric) {
-        console.error('Erro ao buscar usuários (bar_id):', errorNumeric);
+      if (isUUID) {
+        // Se for UUID, consultar por uuid_bar_id
+        console.log('Consultando por uuid_bar_id:', barId);
+        const { data, error } = await supabase
+          .from('bar_profiles')
+          .select('*')
+          .eq('uuid_bar_id', barId);
+        
+        if (error) {
+          console.error('Erro ao buscar usuários por uuid_bar_id:', error);
+          throw error;
+        }
+        
+        profiles = data || [];
+        console.log(`Encontrados ${profiles.length} perfis por uuid_bar_id:`, profiles);
+      } else {
+        // Se não for UUID, consultar por bar_id
+        console.log('Consultando por bar_id:', barId);
+        const { data, error } = await supabase
+          .from('bar_profiles')
+          .select('*')
+          .eq('bar_id', barId);
+        
+        if (error) {
+          console.error('Erro ao buscar usuários por bar_id:', error);
+          throw error;
+        }
+        
+        profiles = data || [];
+        console.log(`Encontrados ${profiles.length} perfis por bar_id:`, profiles);
       }
       
-      if (errorUuid) {
-        console.error('Erro ao buscar usuários (uuid_bar_id):', errorUuid);
-      }
-      
-      if (errorNumeric && errorUuid) {
-        toast({
-          title: "Erro",
-          description: "Não foi possível carregar os usuários conectados",
-          variant: "destructive"
-        });
-        return [];
-      }
-      
-      // Combinar os resultados das duas consultas
-      const combinedData = [
-        ...(dataNumeric || []),
-        ...(dataUuid || [])
-      ];
-      
-      console.log(`Carregados ${combinedData.length} perfis para o bar ${barId}:`, combinedData);
-      
-      if (combinedData.length === 0) {
+      if (profiles.length === 0) {
         console.warn(`Nenhum perfil encontrado para o bar ${barId}`);
         return [];
       }
       
       // Inicializar todos os usuários como online por padrão
-      const usersWithPresence: ConnectedUser[] = combinedData.map(user => ({
+      const usersWithPresence: ConnectedUser[] = profiles.map(user => ({
         id: user.id,
         name: user.name,
         table_id: user.table_id,
