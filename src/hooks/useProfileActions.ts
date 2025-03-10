@@ -15,7 +15,13 @@ export const useProfileActions = (barInfo: BarInfo | null, userId: string | null
     console.log(`Tracking presence for user ${name} (${userId}) in bar ${barId} as ${status}`);
     
     const presenceChannelName = `presence:bar:${barId}`;
-    const presenceChannel = supabase.channel(presenceChannelName);
+    const presenceChannel = supabase.channel(presenceChannelName, {
+      config: {
+        presence: {
+          key: presenceChannelName,
+        },
+      },
+    });
     
     if (status === 'online') {
       await presenceChannel.subscribe(async (status) => {
@@ -58,19 +64,26 @@ export const useProfileActions = (barInfo: BarInfo | null, userId: string | null
     
     try {
       console.log(`Verificando perfil existente com telefone ${phone} no bar ${barId}`);
+      
+      // Alterado para não usar maybeSingle, e sim filtrar manualmente para evitar erro quando há múltiplos resultados
       const { data, error } = await supabase
         .from('bar_profiles')
         .select('*')
         .eq('phone', phone)
-        .eq('bar_id', barId)
-        .maybeSingle();
+        .eq('bar_id', barId);
       
       if (error) {
         console.error('Erro ao verificar perfil existente:', error);
         return null;
       }
       
-      return data;
+      // Se encontrou pelo menos um perfil, retorna o primeiro
+      if (data && data.length > 0) {
+        console.log('Perfil existente encontrado:', data[0]);
+        return data[0];
+      }
+      
+      return null;
     } catch (error) {
       console.error('Erro ao verificar perfil existente:', error);
       return null;
@@ -121,6 +134,20 @@ export const useProfileActions = (barInfo: BarInfo | null, userId: string | null
           title: "Perfil recuperado",
           description: "Seu perfil anterior foi recuperado",
         });
+        
+        // Usar o perfil existente
+        const userProfile = {
+          name: profile.name,
+          phone: existingProfile.phone || '',
+          photo: profile.photo || existingProfile.photo,
+          interest: profile.interest
+        };
+        
+        // Salvar perfil no sessionStorage
+        sessionStorage.setItem('userProfile', JSON.stringify(userProfile));
+        sessionStorage.setItem('userId', newUserId);
+        
+        setUserProfile(userProfile);
       } else {
         // Generate unique user ID para novo perfil
         newUserId = crypto.randomUUID();
@@ -150,13 +177,13 @@ export const useProfileActions = (barInfo: BarInfo | null, userId: string | null
           title: "Perfil criado!",
           description: "Seu perfil foi criado com sucesso",
         });
+        
+        // Save profile to sessionStorage
+        sessionStorage.setItem('userProfile', JSON.stringify(profile));
+        sessionStorage.setItem('userId', newUserId);
+        
+        setUserProfile(profile);
       }
-      
-      // Save profile to sessionStorage
-      sessionStorage.setItem('userProfile', JSON.stringify(profile));
-      sessionStorage.setItem('userId', newUserId);
-      
-      setUserProfile(profile);
       
       // Start tracking presence
       if (barInfo) {

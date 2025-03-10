@@ -11,11 +11,15 @@ export const useBarProfilesLoader = (setBars: React.Dispatch<React.SetStateActio
   const loadBarsAndProfiles = async () => {
     try {
       setIsLoading(true);
+      console.log('Iniciando carregamento de bares e perfis...');
+      
       const { data: barsData, error: barsError } = await supabase
         .from('bars')
         .select('*');
 
       if (barsError) throw barsError;
+      
+      console.log('Bares carregados:', barsData.length);
 
       const { data: profilesData, error: profilesError } = await supabase
         .from('bar_profiles')
@@ -41,6 +45,8 @@ export const useBarProfilesLoader = (setBars: React.Dispatch<React.SetStateActio
             isOnline: false // Inicialmente, todos estão offline
           }));
 
+        console.log(`Bar ${bar.name}: ${barProfiles.length} perfis encontrados`);
+        
         return {
           id: bar.id,
           name: bar.name,
