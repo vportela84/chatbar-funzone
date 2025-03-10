@@ -17,6 +17,8 @@ export const useRealtimeProfileUpdates = (
   useEffect(() => {
     if (!barId) return;
 
+    console.log(`Configurando atualizações em tempo real para bar ${barId} e usuário ${userId || 'não autenticado'}`);
+
     // Setup database changes channel for user profile updates
     const dbChannel = supabase
       .channel('bar_profiles_changes')
@@ -26,33 +28,17 @@ export const useRealtimeProfileUpdates = (
         table: 'bar_profiles',
         filter: `bar_id=eq.${barId}`
       }, (payload) => {
-        console.log('Novo perfil detectado via Supabase Realtime:', payload);
-        
-        // Adicionar o novo usuário à lista
-        setConnectedUsers(current => {
-          // Verificar se o usuário já existe
-          const userExists = current.some(user => user.id === payload.new.id);
-          if (userExists) return current;
-          
-          const newUser: ConnectedUser = {
-            id: payload.new.id,
-            name: payload.new.name,
-            table_id: payload.new.table_id,
-            photo: payload.new.photo,
-            interest: payload.new.interest,
-            online: true // Inicialmente online
-          };
-          
-          // Notificar sobre novo usuário apenas se não for o usuário atual
-          if (payload.new.id !== userId) {
-            toast({
-              title: "Novo usuário",
-              description: `${payload.new.name} entrou no bar`
-            });
-          }
-          
-          return [...current, newUser];
-        });
+        console.log('Novo perfil detectado via Supabase Realtime (bar_id):', payload);
+        handleNewProfile(payload);
+      })
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'bar_profiles',
+        filter: `uuid_bar_id=eq.${barId}`
+      }, (payload) => {
+        console.log('Novo perfil detectado via Supabase Realtime (uuid_bar_id):', payload);
+        handleNewProfile(payload);
       })
       .on('postgres_changes', {
         event: 'DELETE',
@@ -60,24 +46,63 @@ export const useRealtimeProfileUpdates = (
         table: 'bar_profiles',
         filter: `bar_id=eq.${barId}`
       }, (payload) => {
-        console.log('Usuário removido via Supabase Realtime:', payload);
-        
-        // Remover o usuário da lista
-        setConnectedUsers(current => 
-          current.filter(user => user.id !== payload.old.id)
-        );
-        
-        // Notificar sobre usuário removido apenas se não for o usuário atual
-        if (payload.old.id !== userId) {
-          toast({
-            title: "Usuário saiu",
-            description: `${payload.old.name} saiu do bar`
-          });
-        }
+        console.log('Usuário removido via Supabase Realtime (bar_id):', payload);
+        handleDeletedProfile(payload);
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'bar_profiles',
+        filter: `uuid_bar_id=eq.${barId}`
+      }, (payload) => {
+        console.log('Usuário removido via Supabase Realtime (uuid_bar_id):', payload);
+        handleDeletedProfile(payload);
       })
       .subscribe((status) => {
         console.log('Status da inscrição no canal para mudanças no banco de dados:', status);
       });
+    
+    // Funções auxiliares para processar eventos
+    const handleNewProfile = (payload: any) => {
+      setConnectedUsers(current => {
+        // Verificar se o usuário já existe
+        const userExists = current.some(user => user.id === payload.new.id);
+        if (userExists) return current;
+        
+        const newUser: ConnectedUser = {
+          id: payload.new.id,
+          name: payload.new.name,
+          table_id: payload.new.table_id,
+          photo: payload.new.photo,
+          interest: payload.new.interest,
+          online: true // Inicialmente online
+        };
+        
+        // Notificar sobre novo usuário apenas se não for o usuário atual
+        if (payload.new.id !== userId) {
+          toast({
+            title: "Novo usuário",
+            description: `${payload.new.name} entrou no bar`
+          });
+        }
+        
+        return [...current, newUser];
+      });
+    };
+    
+    const handleDeletedProfile = (payload: any) => {
+      setConnectedUsers(current => 
+        current.filter(user => user.id !== payload.old.id)
+      );
+      
+      // Notificar sobre usuário removido apenas se não for o usuário atual
+      if (payload.old.id !== userId) {
+        toast({
+          title: "Usuário saiu",
+          description: `${payload.old.name} saiu do bar`
+        });
+      }
+    };
     
     // Clean up channel when component unmounts
     return () => {

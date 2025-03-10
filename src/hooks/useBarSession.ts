@@ -12,6 +12,7 @@ export const useBarSession = (barId?: string, tableId?: string) => {
   // Initialize bar info and user profile from session storage
   useEffect(() => {
     try {
+      console.log('Inicializando useBarSession com barId:', barId, 'tableId:', tableId);
       // Retrieve bar info from sessionStorage
       const storedBarInfo = sessionStorage.getItem('currentBar');
       if (storedBarInfo) {

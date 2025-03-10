@@ -12,14 +12,22 @@ export const useBarUsers = (barInfo: BarInfo | null, userId: string | null) => {
   // Carregar perfis iniciais
   useEffect(() => {
     const fetchConnectedUsers = async () => {
-      if (!barInfo?.barId) return;
+      if (!barInfo?.barId) {
+        console.error('Tentativa de carregar usuários sem um barId válido');
+        return;
+      }
       
+      console.log(`Carregando perfis iniciais para bar: ${barInfo.barId}`);
       const profiles = await loadBarProfiles(barInfo.barId);
+      console.log(`Perfis carregados (${profiles.length}):`, profiles);
       setConnectedUsers(profiles);
     };
     
     if (barInfo) {
+      console.log('BarInfo disponível, buscando usuários conectados');
       fetchConnectedUsers();
+    } else {
+      console.warn('BarInfo não disponível, não é possível buscar usuários');
     }
   }, [barInfo, loadBarProfiles]);
 

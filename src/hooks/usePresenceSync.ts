@@ -13,6 +13,8 @@ export const usePresenceSync = (
   useEffect(() => {
     if (!barId) return;
     
+    console.log(`Configurando canal de presença para bar: ${barId}`);
+    
     // Setup presence channel for the specific bar
     const presenceChannelName = `presence:bar:${barId}`;
     const presenceChannel = supabase.channel(presenceChannelName, {
@@ -36,6 +38,7 @@ export const usePresenceSync = (
         
         // Update users with their online status based on explicit online field
         setConnectedUsers(currentUsers => {
+          console.log('Atualizando estado de presença para usuários:', currentUsers);
           return currentUsers.map(user => {
             // Find user's presence objects
             const userPresences = allPresences.filter(
@@ -89,10 +92,13 @@ export const usePresenceSync = (
           }
         }
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`Status da inscrição no canal de presença ${presenceChannelName}:`, status);
+      });
     
     // Clean up channel when component unmounts
     return () => {
+      console.log(`Removendo canal de presença para bar: ${barId}`);
       supabase.removeChannel(presenceChannel);
     };
   }, [barId, setConnectedUsers]);

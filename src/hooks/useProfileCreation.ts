@@ -11,15 +11,23 @@ export const useProfileCreation = () => {
       const newUserId = crypto.randomUUID();
       console.log('Criando novo perfil:', profileData);
       
-      const { error } = await supabase.from('bar_profiles').insert({
+      // Verificar se o barId está no formato UUID
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profileData.barId);
+      
+      const profileToInsert = {
         id: newUserId,
         name: profileData.name,
         phone: profileData.phone || null,
         photo: profileData.photo || null,
         interest: profileData.interest,
-        bar_id: profileData.barId,
-        table_id: profileData.tableId
-      });
+        table_id: profileData.tableId,
+        // Se for UUID, usar uuid_bar_id, caso contrário usar bar_id
+        ...(isUUID ? { uuid_bar_id: profileData.barId } : { bar_id: profileData.barId })
+      };
+      
+      console.log('Dados a serem inseridos:', profileToInsert);
+      
+      const { error } = await supabase.from('bar_profiles').insert(profileToInsert);
       
       if (error) {
         console.error('Erro ao salvar perfil:', error);

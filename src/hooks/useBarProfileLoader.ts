@@ -22,10 +22,11 @@ export const useBarProfileLoader = () => {
       setIsLoading(true);
       console.log(`Carregando perfis para o bar: ${barId}`);
       
+      // Consulta para verificar se o barId está no campo bar_id ou uuid_bar_id
       const { data, error } = await supabase
         .from('bar_profiles')
         .select('*')
-        .eq('bar_id', barId);
+        .or(`bar_id.eq.${barId},uuid_bar_id.eq.${barId}`);
       
       if (error) {
         console.error('Erro ao buscar usuários:', error);
