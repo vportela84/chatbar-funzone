@@ -14,7 +14,13 @@ export const usePresenceChannel = (bars: Bar[], setBars: React.Dispatch<React.Se
       const channelName = `presence:bar:${bar.id}`;
       console.log(`Configurando canal de presença para ${bar.name} (${bar.id})`);
       
-      const presenceChannel = supabase.channel(channelName);
+      const presenceChannel = supabase.channel(channelName, {
+        config: {
+          presence: {
+            key: channelName,
+          },
+        },
+      });
       
       presenceChannel
         .on('presence', { event: 'sync' }, () => {
@@ -27,13 +33,16 @@ export const usePresenceChannel = (bars: Bar[], setBars: React.Dispatch<React.Se
               if (currentBar.id !== bar.id) return currentBar;
               
               const updatedProfiles = currentBar.profiles.map(profile => {
-                // Verificar se este perfil está presente no canal
+                // Melhorando a detecção de presença verificando tanto barId quanto tableId
                 const isOnline = Object.values(presenceState)
-                  .flat()
-                  .some((presence: any) => 
-                    presence.userId === profile.barId || 
-                    presence.userId === profile.tableId
-                  );
+                  .some(presences => {
+                    return presences.some((presence: any) => {
+                      const userId = presence.userId || '';
+                      return userId === profile.barId || 
+                             userId === profile.tableId || 
+                             userId.includes(profile.tableId);
+                    });
+                  });
                 
                 return {
                   ...profile,
@@ -41,7 +50,7 @@ export const usePresenceChannel = (bars: Bar[], setBars: React.Dispatch<React.Se
                 };
               });
 
-              console.log(`Bar ${currentBar.name}: atualizando ${updatedProfiles.length} perfis`);
+              console.log(`Bar ${currentBar.name}: atualizando ${updatedProfiles.length} perfis, ${updatedProfiles.filter(p => p.isOnline).length} online`);
               
               return {
                 ...currentBar,
@@ -52,12 +61,29 @@ export const usePresenceChannel = (bars: Bar[], setBars: React.Dispatch<React.Se
         })
         .on('presence', { event: 'join' }, ({ key, newPresences }) => {
           console.log(`Novo usuário entrou no bar ${bar.id}:`, key, newPresences);
+          
+          // Forçar uma sincronização após uma entrada
+          setTimeout(() => {
+            const presenceState = presenceChannel.presenceState();
+            console.log(`Estado de presença após entrada em ${bar.id}:`, presenceState);
+          }, 300);
         })
         .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
           console.log(`Usuário saiu do bar ${bar.id}:`, key, leftPresences);
+          
+          // Forçar uma sincronização após uma saída
+          setTimeout(() => {
+            const presenceState = presenceChannel.presenceState();
+            console.log(`Estado de presença após saída em ${bar.id}:`, presenceState);
+          }, 300);
         })
-        .subscribe((status) => {
+        .subscribe(async (status) => {
           console.log(`Status da inscrição no canal de presença para ${bar.id}:`, status);
+          if (status === 'SUBSCRIBED') {
+            // Enviar um ping inicial para atualizar o estado de presença
+            await presenceChannel.track({ userId: 'admin', status: 'online' });
+            console.log(`Canal de presença para ${bar.id} iniciado com sucesso`);
+          }
         });
       
       return presenceChannel;
@@ -72,3 +98,4 @@ export const usePresenceChannel = (bars: Bar[], setBars: React.Dispatch<React.Se
     };
   }, [bars, setBars]);
 };
+

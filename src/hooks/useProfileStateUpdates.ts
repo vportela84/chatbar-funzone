@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Profile, Bar } from '@/types/admin-dashboard';
 import { useToast } from '@/hooks/use-toast';
 
@@ -7,7 +7,7 @@ export const useProfileStateUpdates = () => {
   const [bars, setBars] = useState<Bar[]>([]);
   const { toast } = useToast();
 
-  const updateBarsWithNewProfile = (newProfile: any) => {
+  const updateBarsWithNewProfile = useCallback((newProfile: any) => {
     console.log('Recebido novo perfil para adicionar:', newProfile);
     
     // Identificar o id do bar corretamente
@@ -72,9 +72,9 @@ export const useProfileStateUpdates = () => {
       title: "Novo cliente!",
       description: `${newProfile.name} entrou no bar.`,
     });
-  };
+  }, [toast]);
 
-  const updateBarsWithRemovedProfile = (removedProfile: any) => {
+  const updateBarsWithRemovedProfile = useCallback((removedProfile: any) => {
     console.log('Removendo perfil:', removedProfile);
     
     // Identificar o id do bar corretamente
@@ -117,7 +117,7 @@ export const useProfileStateUpdates = () => {
       title: "Cliente saiu",
       description: `${removedProfile.name} saiu do bar.`,
     });
-  };
+  }, [toast]);
 
   return {
     bars,
@@ -126,3 +126,4 @@ export const useProfileStateUpdates = () => {
     updateBarsWithRemovedProfile
   };
 };
+

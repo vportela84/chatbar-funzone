@@ -20,7 +20,10 @@ export const useRealtimeDatabaseUpdates = (
         table: 'bar_profiles'
       }, (payload) => {
         console.log('Novo perfil detectado via Supabase Realtime:', payload);
-        onProfileAdded(payload.new);
+        // Adicionar pequeno atraso para garantir que outros processos concluam
+        setTimeout(() => {
+          onProfileAdded(payload.new);
+        }, 100);
       })
       .on('postgres_changes', {
         event: 'DELETE',
@@ -28,10 +31,16 @@ export const useRealtimeDatabaseUpdates = (
         table: 'bar_profiles'
       }, (payload) => {
         console.log('Perfil removido via Supabase Realtime:', payload);
-        onProfileRemoved(payload.old);
+        // Adicionar pequeno atraso para garantir que outros processos concluam
+        setTimeout(() => {
+          onProfileRemoved(payload.old);
+        }, 100);
       })
       .subscribe((status) => {
         console.log('Status da inscrição no canal de realtime:', status);
+        if (status !== 'SUBSCRIBED') {
+          console.error('Falha ao se inscrever no canal de realtime:', status);
+        }
       });
 
     // Limpar canal ao desmontar o componente
@@ -41,3 +50,4 @@ export const useRealtimeDatabaseUpdates = (
     };
   }, [onProfileAdded, onProfileRemoved]);
 };
+
