@@ -30,7 +30,7 @@ export const useBarUsers = (barInfo: BarInfo | null, userId: string | null) => {
         } else {
           console.log('Dados de perfis carregados para o bar:', data);
           // Inicializar todos os usuários como online por padrão, até que o canal de presença atualize
-          const usersWithPresence = data?.map(user => ({
+          const usersWithPresence: ConnectedUser[] = data?.map(user => ({
             id: user.id,
             name: user.name,
             table_id: user.table_id,
@@ -132,6 +132,7 @@ export const useBarUsers = (barInfo: BarInfo | null, userId: string | null) => {
           
           // Extract all presence objects from the state
           const allPresences = Object.values(newState).flat();
+          console.log('Todos os objetos de presença:', allPresences);
           
           // Update users with their online status based on explicit online field
           setConnectedUsers(currentUsers => {
@@ -141,45 +142,52 @@ export const useBarUsers = (barInfo: BarInfo | null, userId: string | null) => {
                 (presence: any) => presence.userId === user.id
               );
               
-              // If we find a presence with online=false, mark as offline
-              const isExplicitlyOffline = userPresences.some(
-                (presence: any) => presence.online === false
-              );
+              console.log(`Presenças para usuário ${user.id}:`, userPresences);
               
-              // Only change to offline if explicitly marked
-              return {
-                ...user,
-                online: isExplicitlyOffline ? false : user.online
-              };
+              // Se encontrou alguma presença, atualize o status
+              if (userPresences.length > 0) {
+                // Verificar se alguma presença é explicitamente offline
+                const isExplicitlyOffline = userPresences.some(
+                  (presence: any) => presence.online === false
+                );
+                
+                return {
+                  ...user,
+                  online: !isExplicitlyOffline // Online a menos que marcado explicitamente como offline
+                };
+              }
+              
+              // Se não encontrou presença, mantenha o estado atual
+              return user;
             });
           });
         })
         .on('presence', { event: 'join' }, ({ key, newPresences }) => {
           console.log('Presence join in bar users:', key, newPresences);
           
-          // Check if any presence has offline status
-          const offlinePresence = newPresences.find((presence: any) => 
-            presence.online === false
-          );
-          
-          if (offlinePresence) {
-            // Update user status to offline immediately
-            setConnectedUsers(currentUsers => 
-              currentUsers.map(user => {
-                if (user.id === offlinePresence.userId) {
-                  return { ...user, online: false };
-                }
-                return user;
-              })
-            );
-            
-            if (offlinePresence.userId !== userId) {
-              toast({
-                title: "Usuário offline",
-                description: `${offlinePresence.name || 'Alguém'} está offline agora`,
-              });
+          // Verificar cada nova presença
+          if (newPresences && newPresences.length > 0) {
+            // Processar cada presença individuamente
+            for (const presence of newPresences) {
+              console.log('Processando presença:', presence);
+              
+              // Verificar se tem userId e não é o admin dashboard
+              if (presence.userId && presence.userId !== 'admin-dashboard') {
+                // Atualizar estado do usuário com base no valor online
+                const isOffline = presence.online === false;
+                
+                setConnectedUsers(currentUsers => 
+                  currentUsers.map(user => {
+                    if (user.id === presence.userId) {
+                      console.log(`Atualizando usuário ${user.name} para ${isOffline ? 'offline' : 'online'}`);
+                      return { ...user, online: !isOffline };
+                    }
+                    return user;
+                  })
+                );
+              }
             }
-          } 
+          }
         })
         .subscribe();
       

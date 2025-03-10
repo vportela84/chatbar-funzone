@@ -52,36 +52,109 @@ export const useProfileActions = (barInfo: BarInfo | null, userId: string | null
     }
   };
 
+  // Verificar se já existe um perfil com o telefone fornecido
+  const checkExistingProfile = async (phone: string, barId: string) => {
+    if (!phone || !barId) return null;
+    
+    try {
+      console.log(`Verificando perfil existente com telefone ${phone} no bar ${barId}`);
+      const { data, error } = await supabase
+        .from('bar_profiles')
+        .select('*')
+        .eq('phone', phone)
+        .eq('bar_id', barId)
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Erro ao verificar perfil existente:', error);
+        return null;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Erro ao verificar perfil existente:', error);
+      return null;
+    }
+  };
+
   // Create a profile in the bar
   const createProfile = async (profile: UserProfile) => {
     try {
-      // Generate unique user ID
-      const newUserId = crypto.randomUUID();
+      if (!barInfo) {
+        console.error('Informações do bar não disponíveis');
+        return false;
+      }
+      
+      // Verificar se já existe um perfil com este telefone neste bar
+      let existingProfile = null;
+      let newUserId = '';
+      
+      if (profile.phone) {
+        existingProfile = await checkExistingProfile(profile.phone, barInfo.barId);
+      }
+      
+      if (existingProfile) {
+        console.log('Perfil existente encontrado:', existingProfile);
+        newUserId = existingProfile.id;
+        
+        // Atualizar o perfil existente se necessário
+        const { error } = await supabase
+          .from('bar_profiles')
+          .update({
+            name: profile.name,
+            interest: profile.interest,
+            photo: profile.photo || existingProfile.photo
+          })
+          .eq('id', newUserId);
+        
+        if (error) {
+          console.error('Erro ao atualizar perfil existente:', error);
+          toast({
+            title: "Erro",
+            description: "Não foi possível atualizar seu perfil",
+            variant: "destructive"
+          });
+          return false;
+        }
+        
+        toast({
+          title: "Perfil recuperado",
+          description: "Seu perfil anterior foi recuperado",
+        });
+      } else {
+        // Generate unique user ID para novo perfil
+        newUserId = crypto.randomUUID();
+        
+        // Salvar novo perfil no banco de dados
+        const { error } = await supabase.from('bar_profiles').insert({
+          id: newUserId,
+          name: profile.name,
+          phone: profile.phone || null,
+          photo: profile.photo || null,
+          interest: profile.interest,
+          bar_id: barInfo.barId,
+          table_id: barInfo.tableNumber
+        });
+        
+        if (error) {
+          console.error('Erro ao salvar perfil:', error);
+          toast({
+            title: "Erro",
+            description: "Não foi possível salvar seu perfil",
+            variant: "destructive"
+          });
+          return false;
+        }
+        
+        toast({
+          title: "Perfil criado!",
+          description: "Seu perfil foi criado com sucesso",
+        });
+      }
       
       // Save profile to sessionStorage
       sessionStorage.setItem('userProfile', JSON.stringify(profile));
       sessionStorage.setItem('userId', newUserId);
-      
-      // Save profile to the database
-      const { error } = await supabase.from('bar_profiles').insert({
-        id: newUserId,
-        name: profile.name,
-        phone: profile.phone || null,
-        photo: profile.photo || null,
-        interest: profile.interest,
-        bar_id: barInfo?.barId,
-        table_id: barInfo?.tableNumber
-      });
-      
-      if (error) {
-        console.error('Erro ao salvar perfil:', error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível salvar seu perfil",
-          variant: "destructive"
-        });
-        return false;
-      }
       
       setUserProfile(profile);
       
@@ -89,11 +162,6 @@ export const useProfileActions = (barInfo: BarInfo | null, userId: string | null
       if (barInfo) {
         trackPresence(barInfo.barId, newUserId, profile.name, 'online');
       }
-      
-      toast({
-        title: "Perfil criado!",
-        description: "Seu perfil foi criado com sucesso",
-      });
       
       return true;
     } catch (error) {
