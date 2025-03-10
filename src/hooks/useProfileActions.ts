@@ -3,17 +3,22 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { UserProfile, BarInfo } from '@/types/bar';
 import { usePresenceTracker } from './usePresenceTracker';
-import { useProfileManager } from './useProfileManager';
+import { useProfileUpdate } from './useProfileUpdate';
+import { useProfileCreation } from './useProfileCreation';
 import { useChatManager } from './useChatManager';
 
-export const useProfileActions = (barInfo: BarInfo | null, userId: string | null, setUserProfile: (profile: UserProfile | null) => void) => {
+export const useProfileActions = (
+  barInfo: BarInfo | null, 
+  userId: string | null, 
+  setUserProfile: (profile: UserProfile | null) => void
+) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { trackPresence } = usePresenceTracker();
-  const { checkExistingProfile, updateExistingProfile, createNewProfile, removeProfile } = useProfileManager();
+  const { checkExistingProfile, updateExistingProfile } = useProfileUpdate();
+  const { createNewProfile, removeProfile } = useProfileCreation();
   const { startChat: initiateChat } = useChatManager();
   
-  // Create a profile in the bar
   const createProfile = async (profile: UserProfile) => {
     try {
       if (!barInfo) {
@@ -21,7 +26,6 @@ export const useProfileActions = (barInfo: BarInfo | null, userId: string | null
         return false;
       }
       
-      // Verificar se já existe um perfil com este telefone neste bar
       let existingProfile = null;
       let newUserId = '';
       
@@ -33,7 +37,6 @@ export const useProfileActions = (barInfo: BarInfo | null, userId: string | null
         console.log('Perfil existente encontrado:', existingProfile);
         newUserId = existingProfile.id;
         
-        // Atualizar o perfil existente se necessário
         const updated = await updateExistingProfile(newUserId, {
           name: profile.name,
           interest: profile.interest,
@@ -47,7 +50,6 @@ export const useProfileActions = (barInfo: BarInfo | null, userId: string | null
           description: "Seu perfil anterior foi recuperado",
         });
         
-        // Usar o perfil existente
         const userProfile = {
           name: profile.name,
           phone: existingProfile.phone || '',
@@ -55,13 +57,11 @@ export const useProfileActions = (barInfo: BarInfo | null, userId: string | null
           interest: profile.interest
         };
         
-        // Salvar perfil no sessionStorage
         sessionStorage.setItem('userProfile', JSON.stringify(userProfile));
         sessionStorage.setItem('userId', newUserId);
         
         setUserProfile(userProfile);
       } else {
-        // Criar novo perfil
         newUserId = await createNewProfile({
           ...profile,
           barId: barInfo.barId,
@@ -70,14 +70,12 @@ export const useProfileActions = (barInfo: BarInfo | null, userId: string | null
         
         if (!newUserId) return false;
         
-        // Save profile to sessionStorage
         sessionStorage.setItem('userProfile', JSON.stringify(profile));
         sessionStorage.setItem('userId', newUserId);
         
         setUserProfile(profile);
       }
       
-      // Start tracking presence
       if (barInfo) {
         trackPresence(barInfo.barId, newUserId, profile.name, 'online');
       }
@@ -94,30 +92,24 @@ export const useProfileActions = (barInfo: BarInfo | null, userId: string | null
     }
   };
 
-  // Start chat with a user
   const startChat = (chatUserId: string, userName: string) => {
     if (!barInfo) return;
     initiateChat(chatUserId, userName, barInfo.barId, barInfo.barName);
   };
 
-  // Leave the bar
   const leaveBar = async () => {
-    // Always mark as offline before removing profile
     if (barInfo && userId) {
       const storedProfile = sessionStorage.getItem('userProfile');
       const userName = storedProfile ? JSON.parse(storedProfile).name : '';
       console.log(`User ${userName} (${userId}) is leaving bar ${barInfo.barId}`);
       
-      // Explicitly set presence to offline
       await trackPresence(barInfo.barId, userId, userName, 'offline');
       
-      // Remove profile from database after a delay to ensure offline status is updated
       setTimeout(async () => {
         if (userId) {
           await removeProfile(userId);
         }
         
-        // Clear sessionStorage
         sessionStorage.removeItem('userProfile');
         sessionStorage.removeItem('userId');
         sessionStorage.removeItem('currentBar');
@@ -129,9 +121,8 @@ export const useProfileActions = (barInfo: BarInfo | null, userId: string | null
         });
         
         navigate('/');
-      }, 2000); // Increased delay to ensure offline status is processed
+      }, 2000);
     } else {
-      // Just clean up if no bar info or userId
       sessionStorage.removeItem('userProfile');
       sessionStorage.removeItem('userId');
       sessionStorage.removeItem('currentBar');
