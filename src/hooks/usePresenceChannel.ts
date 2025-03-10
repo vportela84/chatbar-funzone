@@ -3,6 +3,15 @@ import { useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { Bar } from '@/types/admin-dashboard';
 
+// Definição de tipo para a presença recebida do canal Supabase
+interface PresencePayload {
+  userId?: string;
+  online?: boolean;
+  name?: string;
+  presence_ref?: string;
+  [key: string]: any; // Para permitir propriedades adicionais
+}
+
 export const usePresenceChannel = (bars: Bar[], setBars: React.Dispatch<React.SetStateAction<Bar[]>>) => {
   useEffect(() => {
     if (bars.length === 0) return;
@@ -34,10 +43,10 @@ export const usePresenceChannel = (bars: Bar[], setBars: React.Dispatch<React.Se
               
               const updatedProfiles = currentBar.profiles.map(profile => {
                 // Verificar se há presença para este perfil
-                const presences = Object.values(presenceState).flat();
+                const presences = Object.values(presenceState).flat() as PresencePayload[];
                 
                 // Encontrar qualquer presença relevante para este perfil
-                const userPresence = presences.find((presence: any) => 
+                const userPresence = presences.find((presence: PresencePayload) => 
                   presence.userId === profile.id
                 );
                 
@@ -70,7 +79,7 @@ export const usePresenceChannel = (bars: Bar[], setBars: React.Dispatch<React.Se
           console.log(`Novo usuário detectado no bar ${bar.id}:`, key, newPresences);
           
           // Verificar se as novas presenças têm status offline explícito
-          const offlinePresence = newPresences.find((presence: any) => 
+          const offlinePresence = newPresences.find((presence: PresencePayload) => 
             presence.online === false
           );
           
