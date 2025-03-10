@@ -51,8 +51,6 @@ export const useProfileData = () => {
 
       if (profilesError) throw profilesError;
 
-      // Vamos considerar que todos os usuários presentes na lista estão online
-      // No futuro, podemos integrar com a funcionalidade de presença do Supabase
       const barsWithProfiles = barsData.map(bar => ({
         id: bar.id,
         name: bar.name,
@@ -65,7 +63,7 @@ export const useProfileData = () => {
             barId: profile.bar_id,
             photo: profile.photo,
             interest: profile.interest,
-            isOnline: true // Definindo todos como online por enquanto
+            isOnline: true
           }))
       }));
 
@@ -82,60 +80,71 @@ export const useProfileData = () => {
     }
   };
 
-  // Atualiza o estado quando um novo perfil é adicionado
   const updateBarsWithNewProfile = (newProfile: any) => {
+    console.log('Atualizando bares com novo perfil:', newProfile);
     setBars(currentBars => {
-      return currentBars.map(bar => {
-        if (bar.id === newProfile.bar_id) {
-          return {
-            ...bar,
-            profiles: [
-              ...bar.profiles,
-              {
-                name: newProfile.name,
-                phone: newProfile.phone || '',
-                tableId: newProfile.table_id,
-                barId: newProfile.bar_id,
-                photo: newProfile.photo,
-                interest: newProfile.interest,
-                isOnline: true
-              }
-            ]
-          };
+      const updatedBars = currentBars.map(bar => {
+        // Verifica o uuid_bar_id primeiro, depois o bar_id
+        if (bar.id === newProfile.uuid_bar_id || bar.id === newProfile.bar_id) {
+          const profileExists = bar.profiles.some(
+            p => p.name === newProfile.name && p.tableId === newProfile.table_id
+          );
+
+          if (!profileExists) {
+            return {
+              ...bar,
+              profiles: [
+                ...bar.profiles,
+                {
+                  name: newProfile.name,
+                  phone: newProfile.phone || '',
+                  tableId: newProfile.table_id,
+                  barId: newProfile.uuid_bar_id || newProfile.bar_id,
+                  photo: newProfile.photo,
+                  interest: newProfile.interest,
+                  isOnline: true
+                }
+              ]
+            };
+          }
         }
         return bar;
       });
+
+      console.log('Bares atualizados:', updatedBars);
+      return updatedBars;
     });
 
-    // Notificar o administrador sobre o novo perfil
     toast({
       title: "Novo cliente!",
       description: `${newProfile.name} entrou no bar.`,
     });
   };
 
-  // Atualiza o estado quando um perfil é removido
   const updateBarsWithRemovedProfile = (removedProfile: any) => {
+    console.log('Removendo perfil:', removedProfile);
     setBars(currentBars => {
-      return currentBars.map(bar => {
-        if (bar.id === removedProfile.bar_id) {
+      const updatedBars = currentBars.map(bar => {
+        if (bar.id === removedProfile.uuid_bar_id || bar.id === removedProfile.bar_id) {
           return {
             ...bar,
             profiles: bar.profiles.filter(
               profile => !(profile.name === removedProfile.name && 
-                           profile.tableId === removedProfile.table_id)
+                         profile.tableId === removedProfile.table_id)
             )
           };
         }
         return bar;
       });
+
+      console.log('Bares após remoção:', updatedBars);
+      return updatedBars;
     });
   };
 
   useEffect(() => {
     loadBarsAndProfiles();
     
-    // Configurar channel para receber atualizações em tempo real
     const channel = supabase
       .channel('admin-dashboard-profiles')
       .on('postgres_changes', {
@@ -156,7 +165,6 @@ export const useProfileData = () => {
       })
       .subscribe();
 
-    // Limpar a subscription quando o componente for desmontado
     return () => {
       supabase.removeChannel(channel);
     };
