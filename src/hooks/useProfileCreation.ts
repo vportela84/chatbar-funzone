@@ -9,6 +9,7 @@ export const useProfileCreation = () => {
   const createNewProfile = async (profileData: UserProfile & { barId: string, tableId: string }) => {
     try {
       const newUserId = crypto.randomUUID();
+      console.log('Criando novo perfil:', profileData);
       
       const { error } = await supabase.from('bar_profiles').insert({
         id: newUserId,
@@ -24,12 +25,13 @@ export const useProfileCreation = () => {
         console.error('Erro ao salvar perfil:', error);
         toast({
           title: "Erro",
-          description: "Não foi possível salvar seu perfil",
+          description: "Não foi possível salvar seu perfil: " + error.message,
           variant: "destructive"
         });
         return null;
       }
       
+      console.log('Perfil criado com sucesso, ID:', newUserId);
       toast({
         title: "Perfil criado!",
         description: "Seu perfil foi criado com sucesso",
@@ -38,12 +40,18 @@ export const useProfileCreation = () => {
       return newUserId;
     } catch (error) {
       console.error('Erro ao criar perfil:', error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro inesperado ao criar seu perfil",
+        variant: "destructive"
+      });
       return null;
     }
   };
 
   const removeProfile = async (userId: string) => {
     try {
+      console.log('Removendo perfil de usuário:', userId);
       const { error } = await supabase
         .from('bar_profiles')
         .delete()
@@ -54,6 +62,7 @@ export const useProfileCreation = () => {
         return false;
       }
       
+      console.log('Perfil removido com sucesso');
       return true;
     } catch (error) {
       console.error('Erro ao remover perfil:', error);

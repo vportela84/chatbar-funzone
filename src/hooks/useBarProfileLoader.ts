@@ -13,12 +13,15 @@ export const useBarProfileLoader = () => {
 
   const loadBarProfiles = async (barId: string) => {
     if (!barId) {
+      console.error('Tentativa de carregar perfis sem um ID de bar válido');
       setIsLoading(false);
       return [];
     }
     
     try {
       setIsLoading(true);
+      console.log(`Carregando perfis para o bar: ${barId}`);
+      
       const { data, error } = await supabase
         .from('bar_profiles')
         .select('*')
@@ -28,12 +31,13 @@ export const useBarProfileLoader = () => {
         console.error('Erro ao buscar usuários:', error);
         toast({
           title: "Erro",
-          description: "Não foi possível carregar os usuários conectados",
+          description: "Não foi possível carregar os usuários conectados: " + error.message,
           variant: "destructive"
         });
         return [];
       } else {
-        console.log('Dados de perfis carregados para o bar:', data);
+        console.log(`Carregados ${data?.length || 0} perfis para o bar ${barId}:`, data);
+        
         // Inicializar todos os usuários como online por padrão, até que o canal de presença atualize
         const usersWithPresence: ConnectedUser[] = data?.map(user => ({
           id: user.id,
@@ -46,8 +50,13 @@ export const useBarProfileLoader = () => {
         
         return usersWithPresence;
       }
-    } catch (error) {
-      console.error('Erro:', error);
+    } catch (error: any) {
+      console.error('Erro ao carregar perfis:', error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro inesperado ao carregar os perfis: " + (error.message || 'Erro desconhecido'),
+        variant: "destructive"
+      });
       return [];
     } finally {
       setIsLoading(false);
