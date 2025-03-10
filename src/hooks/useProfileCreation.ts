@@ -47,11 +47,11 @@ export const useProfileCreation = () => {
       });
       
       return newUserId;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao criar perfil:', error);
       toast({
         title: "Erro",
-        description: "Ocorreu um erro inesperado ao criar seu perfil",
+        description: "Ocorreu um erro inesperado ao criar seu perfil: " + (error.message || 'Erro desconhecido'),
         variant: "destructive"
       });
       return null;

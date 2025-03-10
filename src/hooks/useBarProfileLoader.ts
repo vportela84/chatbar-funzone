@@ -22,7 +22,7 @@ export const useBarProfileLoader = () => {
       setIsLoading(true);
       console.log(`Carregando perfis para o bar: ${barId}`);
       
-      // Reformulação da query para usar filter corretamente
+      // Consulta corrigida para buscar perfis com ambos os tipos de barId
       const { data, error } = await supabase
         .from('bar_profiles')
         .select('*')
@@ -36,21 +36,26 @@ export const useBarProfileLoader = () => {
           variant: "destructive"
         });
         return [];
-      } else {
-        console.log(`Carregados ${data?.length || 0} perfis para o bar ${barId}:`, data);
-        
-        // Inicializar todos os usuários como online por padrão, até que o canal de presença atualize
-        const usersWithPresence: ConnectedUser[] = data?.map(user => ({
-          id: user.id,
-          name: user.name,
-          table_id: user.table_id,
-          photo: user.photo,
-          interest: user.interest,
-          online: true // Assume online until presence channel says otherwise
-        })) || [];
-        
-        return usersWithPresence;
       }
+      
+      console.log(`Carregados ${data?.length || 0} perfis para o bar ${barId}:`, data);
+      
+      if (!data || data.length === 0) {
+        console.warn(`Nenhum perfil encontrado para o bar ${barId}`);
+        return [];
+      }
+      
+      // Inicializar todos os usuários como online por padrão, até que o canal de presença atualize
+      const usersWithPresence: ConnectedUser[] = data.map(user => ({
+        id: user.id,
+        name: user.name,
+        table_id: user.table_id,
+        photo: user.photo,
+        interest: user.interest,
+        online: true // Assume online until presence channel says otherwise
+      }));
+      
+      return usersWithPresence;
     } catch (error: any) {
       console.error('Erro ao carregar perfis:', error);
       toast({
