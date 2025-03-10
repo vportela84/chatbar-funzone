@@ -9,39 +9,33 @@ export const useProfileCreation = () => {
   const checkExistingUser = async (phone: string, barId: string): Promise<any | null> => {
     if (!phone || !barId) return null;
     
-    console.log('Verificando usuário existente:', { phone, barId });
+    console.log('Verificando usuário existente com telefone:', phone, 'no bar:', barId);
     
     try {
-      // First query just by phone to see if the user exists in any bar
-      const { data: usersByPhone, error: phoneError } = await supabase
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(barId);
+      console.log('barId é UUID?', isUUID, barId);
+
+      // Consulta direta usando os campos corretos com base no formato do barId
+      const query = supabase
         .from('bar_profiles')
         .select('*')
         .eq('phone', phone);
       
-      if (phoneError) {
-        console.error('Erro ao verificar usuário por telefone:', phoneError);
-        throw phoneError;
+      // Adicionar a condição correta com base no formato do ID do bar
+      const { data, error } = await (isUUID 
+        ? query.eq('uuid_bar_id', barId)
+        : query.eq('bar_id', barId));
+      
+      if (error) {
+        console.error('Erro ao verificar usuário existente:', error);
+        throw error;
       }
       
-      console.log(`Encontrados ${usersByPhone?.length || 0} usuários com o mesmo telefone:`, usersByPhone);
+      console.log('Usuários encontrados com o mesmo telefone no mesmo bar:', data);
       
-      // If we found users with this phone, check if any of them are in the current bar
-      if (usersByPhone && usersByPhone.length > 0) {
-        // Check if barId is UUID format
-        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(barId);
-        console.log('barId é UUID?', isUUID, barId);
-        
-        // Look for a matching user in the same bar
-        const existingUser = usersByPhone.find(user => {
-          if (isUUID) {
-            return user.uuid_bar_id === barId;
-          } else {
-            return user.bar_id === barId;
-          }
-        });
-        
-        console.log('Usuário existente no mesmo bar:', existingUser);
-        return existingUser || null;
+      // Retornar o primeiro usuário encontrado, se houver
+      if (data && data.length > 0) {
+        return data[0];
       }
       
       return null;
@@ -55,13 +49,13 @@ export const useProfileCreation = () => {
     try {
       console.log('Iniciando criação/atualização de perfil:', profileData);
       
-      // Check if user exists by phone number
+      // Verificar se usuário existe pelo número de telefone
       let existingUser = null;
       if (profileData.phone) {
         existingUser = await checkExistingUser(profileData.phone, profileData.barId);
       }
       
-      // If found existing user, return their ID
+      // Se encontrou usuário existente, retornar o ID dele
       if (existingUser) {
         console.log('Usuário existente encontrado:', existingUser);
         toast({
@@ -71,10 +65,11 @@ export const useProfileCreation = () => {
         return existingUser.id;
       }
       
-      // If no existing user, create new profile
+      // Se não houver usuário existente, criar novo perfil
       const newUserId = crypto.randomUUID();
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profileData.barId);
       
+      // Configurar os campos corretos com base no formato do ID do bar
       const profileToInsert = {
         id: newUserId,
         name: profileData.name,
@@ -82,6 +77,7 @@ export const useProfileCreation = () => {
         photo: profileData.photo || null,
         interest: profileData.interest,
         table_id: profileData.tableId,
+        // Definir ambos os campos apropriadamente
         uuid_bar_id: isUUID ? profileData.barId : null,
         bar_id: !isUUID ? profileData.barId : null
       };
