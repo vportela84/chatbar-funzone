@@ -31,6 +31,7 @@ export const useBarProfilesLoader = (setBars: React.Dispatch<React.SetStateActio
         const barProfiles = profilesData
           .filter(profile => profile.bar_id === bar.id || profile.uuid_bar_id === bar.id)
           .map(profile => ({
+            id: profile.id, // Adicionar o ID do perfil
             name: profile.name,
             phone: profile.phone || '',
             tableId: profile.table_id,

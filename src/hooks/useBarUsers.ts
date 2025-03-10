@@ -31,7 +31,11 @@ export const useBarUsers = (barInfo: BarInfo | null, userId: string | null) => {
           console.log('Dados de perfis carregados para o bar:', data);
           // Inicializar todos os usuários como online por padrão, até que o canal de presença atualize
           const usersWithPresence = data?.map(user => ({
-            ...user,
+            id: user.id,
+            name: user.name,
+            table_id: user.table_id,
+            photo: user.photo,
+            interest: user.interest,
             online: true // Assume online until presence channel says otherwise
           })) || [];
           
@@ -64,8 +68,12 @@ export const useBarUsers = (barInfo: BarInfo | null, userId: string | null) => {
             const userExists = current.some(user => user.id === payload.new.id);
             if (userExists) return current;
             
-            const newUser = {
-              ...payload.new,
+            const newUser: ConnectedUser = {
+              id: payload.new.id,
+              name: payload.new.name,
+              table_id: payload.new.table_id,
+              photo: payload.new.photo,
+              interest: payload.new.interest,
               online: true // Inicialmente online
             };
             
@@ -150,16 +158,19 @@ export const useBarUsers = (barInfo: BarInfo | null, userId: string | null) => {
           console.log('Presence join in bar users:', key, newPresences);
           
           // Check if any presence has offline status
-          const offlinePresence = newPresences.find((presence: any) => presence.online === false);
+          const offlinePresence = newPresences.find((presence: any) => 
+            presence.online === false
+          );
           
           if (offlinePresence) {
             // Update user status to offline immediately
             setConnectedUsers(currentUsers => 
-              currentUsers.map(user => 
-                user.id === offlinePresence.userId 
-                  ? { ...user, online: false } 
-                  : user
-              )
+              currentUsers.map(user => {
+                if (user.id === offlinePresence.userId) {
+                  return { ...user, online: false };
+                }
+                return user;
+              })
             );
             
             if (offlinePresence.userId !== userId) {
