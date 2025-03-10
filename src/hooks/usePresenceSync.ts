@@ -25,6 +25,22 @@ export const usePresenceSync = (
       },
     });
     
+    // Track this user's presence
+    const joinChannel = async () => {
+      console.log('Entrando no canal de presença...');
+      try {
+        const status = await presenceChannel.subscribe((status) => {
+          console.log(`Status da inscrição no canal de presença ${presenceChannelName}:`, status);
+        });
+        
+        console.log('Status da inscrição:', status);
+      } catch (error) {
+        console.error('Erro ao entrar no canal de presença:', error);
+      }
+    };
+    
+    joinChannel();
+    
     // Set up presence events
     presenceChannel
       .on('presence', { event: 'sync' }, () => {
@@ -91,9 +107,6 @@ export const usePresenceSync = (
             }
           }
         }
-      })
-      .subscribe((status) => {
-        console.log(`Status da inscrição no canal de presença ${presenceChannelName}:`, status);
       });
     
     // Clean up channel when component unmounts

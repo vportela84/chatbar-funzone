@@ -19,9 +19,9 @@ export const useRealtimeProfileUpdates = (
 
     console.log(`Configurando atualizações em tempo real para bar ${barId} e usuário ${userId || 'não autenticado'}`);
 
-    // Setup database changes channel for user profile updates
-    const dbChannel = supabase
-      .channel('bar_profiles_changes')
+    // Criar dois canais separados para bar_id e uuid_bar_id
+    const barIdChannel = supabase
+      .channel('bar_id_changes')
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -31,6 +31,21 @@ export const useRealtimeProfileUpdates = (
         console.log('Novo perfil detectado via Supabase Realtime (bar_id):', payload);
         handleNewProfile(payload);
       })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'bar_profiles',
+        filter: `bar_id=eq.${barId}`
+      }, (payload) => {
+        console.log('Usuário removido via Supabase Realtime (bar_id):', payload);
+        handleDeletedProfile(payload);
+      })
+      .subscribe((status) => {
+        console.log('Status da inscrição no canal para bar_id:', status);
+      });
+
+    const uuidBarIdChannel = supabase
+      .channel('uuid_bar_id_changes')
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -44,22 +59,13 @@ export const useRealtimeProfileUpdates = (
         event: 'DELETE',
         schema: 'public',
         table: 'bar_profiles',
-        filter: `bar_id=eq.${barId}`
-      }, (payload) => {
-        console.log('Usuário removido via Supabase Realtime (bar_id):', payload);
-        handleDeletedProfile(payload);
-      })
-      .on('postgres_changes', {
-        event: 'DELETE',
-        schema: 'public',
-        table: 'bar_profiles',
         filter: `uuid_bar_id=eq.${barId}`
       }, (payload) => {
         console.log('Usuário removido via Supabase Realtime (uuid_bar_id):', payload);
         handleDeletedProfile(payload);
       })
       .subscribe((status) => {
-        console.log('Status da inscrição no canal para mudanças no banco de dados:', status);
+        console.log('Status da inscrição no canal para uuid_bar_id:', status);
       });
     
     // Funções auxiliares para processar eventos
@@ -104,9 +110,10 @@ export const useRealtimeProfileUpdates = (
       }
     };
     
-    // Clean up channel when component unmounts
+    // Clean up channels when component unmounts
     return () => {
-      supabase.removeChannel(dbChannel);
+      supabase.removeChannel(barIdChannel);
+      supabase.removeChannel(uuidBarIdChannel);
     };
   }, [barId, setConnectedUsers, toast, userId]);
 };

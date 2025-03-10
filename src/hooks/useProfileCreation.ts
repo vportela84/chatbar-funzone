@@ -22,8 +22,8 @@ export const useProfileCreation = () => {
         photo: profileData.photo || null,
         interest: profileData.interest,
         table_id: profileData.tableId,
-        // Se for UUID, usar uuid_bar_id, caso contrário usar bar_id
-        ...(isUUID ? { uuid_bar_id: profileData.barId } : { bar_id: profileData.barId })
+        bar_id: isUUID ? null : profileData.barId,
+        uuid_bar_id: isUUID ? profileData.barId : null
       };
       
       console.log('Dados a serem inseridos:', profileToInsert);

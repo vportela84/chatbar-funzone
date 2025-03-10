@@ -22,31 +22,50 @@ export const useBarProfileLoader = () => {
       setIsLoading(true);
       console.log(`Carregando perfis para o bar: ${barId}`);
       
-      // Consulta corrigida para buscar perfis com ambos os tipos de barId
-      const { data, error } = await supabase
+      // Nova abordagem: duas consultas separadas e união dos resultados
+      const { data: dataNumeric, error: errorNumeric } = await supabase
         .from('bar_profiles')
         .select('*')
-        .or(`bar_id.eq.${barId},uuid_bar_id.eq.${barId}`);
+        .eq('bar_id', barId);
       
-      if (error) {
-        console.error('Erro ao buscar usuários:', error);
+      const { data: dataUuid, error: errorUuid } = await supabase
+        .from('bar_profiles')
+        .select('*')
+        .eq('uuid_bar_id', barId);
+      
+      // Verificar erros em ambas as consultas
+      if (errorNumeric) {
+        console.error('Erro ao buscar usuários (bar_id):', errorNumeric);
+      }
+      
+      if (errorUuid) {
+        console.error('Erro ao buscar usuários (uuid_bar_id):', errorUuid);
+      }
+      
+      if (errorNumeric && errorUuid) {
         toast({
           title: "Erro",
-          description: "Não foi possível carregar os usuários conectados: " + error.message,
+          description: "Não foi possível carregar os usuários conectados",
           variant: "destructive"
         });
         return [];
       }
       
-      console.log(`Carregados ${data?.length || 0} perfis para o bar ${barId}:`, data);
+      // Combinar os resultados das duas consultas
+      const combinedData = [
+        ...(dataNumeric || []),
+        ...(dataUuid || [])
+      ];
       
-      if (!data || data.length === 0) {
+      console.log(`Carregados ${combinedData.length} perfis para o bar ${barId}:`, combinedData);
+      
+      if (combinedData.length === 0) {
         console.warn(`Nenhum perfil encontrado para o bar ${barId}`);
         return [];
       }
       
-      // Inicializar todos os usuários como online por padrão, até que o canal de presença atualize
-      const usersWithPresence: ConnectedUser[] = data.map(user => ({
+      // Inicializar todos os usuários como online por padrão
+      const usersWithPresence: ConnectedUser[] = combinedData.map(user => ({
         id: user.id,
         name: user.name,
         table_id: user.table_id,
