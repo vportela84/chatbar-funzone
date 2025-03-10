@@ -9,7 +9,7 @@ interface PresencePayload {
   online?: boolean;
   name?: string;
   presence_ref?: string;
-  [key: string]: any; // Para permitir propriedades adicionais
+  [key: string]: any;
 }
 
 export const usePresenceChannel = (bars: Bar[], setBars: React.Dispatch<React.SetStateAction<Bar[]>>) => {
@@ -36,7 +36,6 @@ export const usePresenceChannel = (bars: Bar[], setBars: React.Dispatch<React.Se
           const presenceState = presenceChannel.presenceState();
           console.log(`Estado de presença atualizado para bar ${bar.id}:`, presenceState);
           
-          // Atualizar estado online dos usuários
           setBars(currentBars => {
             return currentBars.map(currentBar => {
               if (currentBar.id !== bar.id) return currentBar;
@@ -44,26 +43,18 @@ export const usePresenceChannel = (bars: Bar[], setBars: React.Dispatch<React.Se
               const updatedProfiles = currentBar.profiles.map(profile => {
                 // Verificar se há presença para este perfil
                 const presences = Object.values(presenceState).flat() as PresencePayload[];
+                const userPresence = presences.find(presence => presence.userId === profile.id);
                 
-                // Encontrar qualquer presença relevante para este perfil
-                const userPresence = presences.find((presence: PresencePayload) => 
-                  presence.userId === profile.id
-                );
-                
-                let isOnline = profile.isOnline; // Manter estado atual por padrão
-                
-                // Verificar estado de presença somente se existir uma presença para este usuário
-                if (userPresence && typeof userPresence.online === 'boolean') {
-                  // Se userPresence.online é explicitamente false, definir como offline
-                  if (userPresence.online === false) {
-                    isOnline = false;
-                  }
+                // Se encontrou presença, atualize o estado online
+                if (userPresence) {
+                  return {
+                    ...profile,
+                    isOnline: userPresence.online !== false // Se não for explicitamente false, considere online
+                  };
                 }
                 
-                return {
-                  ...profile,
-                  isOnline
-                };
+                // Se não encontrou presença, mantenha o estado atual
+                return profile;
               });
 
               console.log(`Bar ${currentBar.name}: atualizando ${updatedProfiles.length} perfis, ${updatedProfiles.filter(p => p.isOnline).length} online`);
@@ -75,10 +66,10 @@ export const usePresenceChannel = (bars: Bar[], setBars: React.Dispatch<React.Se
             });
           });
         })
-        .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+        .on('presence', { event: 'join' }, async ({ key, newPresences }) => {
           console.log(`Novo usuário detectado no bar ${bar.id}:`, key, newPresences);
           
-          // Verificar se as novas presenças têm status offline explícito
+          // Verificar presenças offline
           const offlinePresence = newPresences.find((presence: PresencePayload) => 
             presence.online === false
           );
@@ -86,7 +77,6 @@ export const usePresenceChannel = (bars: Bar[], setBars: React.Dispatch<React.Se
           if (offlinePresence) {
             console.log(`Usuário ${offlinePresence.name} marcado como offline explicitamente`);
             
-            // Atualizar o status para offline imediatamente
             setBars(currentBars => {
               return currentBars.map(currentBar => {
                 if (currentBar.id !== bar.id) return currentBar;
@@ -116,7 +106,7 @@ export const usePresenceChannel = (bars: Bar[], setBars: React.Dispatch<React.Se
             await presenceChannel.track({ 
               userId: 'admin-dashboard',
               name: 'Admin Dashboard',
-              status: 'online',
+              online: true,
               timestamp: new Date().toISOString()
             });
             console.log(`Canal de presença para ${bar.id} iniciado com sucesso`);
