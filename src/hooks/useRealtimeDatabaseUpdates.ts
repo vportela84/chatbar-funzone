@@ -20,10 +20,9 @@ export const useRealtimeDatabaseUpdates = (
         table: 'bar_profiles'
       }, (payload) => {
         console.log('Novo perfil detectado via Supabase Realtime:', payload);
-        // Chamar o handler imediatamente com um atraso para garantir que outros processos de inicialização terminaram
-        setTimeout(() => {
-          onProfileAdded(payload.new);
-        }, 100);
+        
+        // Chamar o handler imediatamente com o novo perfil
+        onProfileAdded(payload.new);
       })
       .on('postgres_changes', {
         event: 'DELETE',

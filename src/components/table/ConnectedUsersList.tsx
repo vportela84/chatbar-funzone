@@ -113,6 +113,9 @@ const ConnectedUsersList: React.FC<ConnectedUsersListProps> = ({
                     <div className="flex items-center gap-2">
                       <h3 className="font-medium text-primary">{user.name}</h3>
                       <span className={`w-2 h-2 rounded-full ${user.online ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                      {user.id === currentUserId && (
+                        <span className="text-xs bg-blue-500/20 text-blue-300 px-1 rounded">Você</span>
+                      )}
                     </div>
                     <div className="flex flex-col space-y-1">
                       <p className="text-xs text-primary opacity-70">Mesa {user.table_id}</p>
@@ -127,23 +130,27 @@ const ConnectedUsersList: React.FC<ConnectedUsersListProps> = ({
                   </div>
                 </div>
                 <div className="relative">
-                  <Button 
-                    onClick={() => {
-                      onStartChat(user.id, user.name);
-                      // Limpar a notificação quando começar o chat
-                      setUnreadMessages(prev => ({
-                        ...prev,
-                        [user.id]: false
-                      }));
-                    }}
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center"
-                    disabled={!user.online}
-                  >
-                    <MessageSquare className="w-4 h-4 mr-1" />
-                    Conversar
-                  </Button>
+                  {user.id !== currentUserId ? (
+                    <Button 
+                      onClick={() => {
+                        onStartChat(user.id, user.name);
+                        // Limpar a notificação quando começar o chat
+                        setUnreadMessages(prev => ({
+                          ...prev,
+                          [user.id]: false
+                        }));
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center"
+                      disabled={!user.online}
+                    >
+                      <MessageSquare className="w-4 h-4 mr-1" />
+                      Conversar
+                    </Button>
+                  ) : (
+                    <span className="text-xs text-primary/60">Seu perfil</span>
+                  )}
                   
                   {unreadMessages[user.id] && (
                     <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-green-500 border border-white"></span>

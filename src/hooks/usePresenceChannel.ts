@@ -38,16 +38,14 @@ export const usePresenceChannel = (bars: Bar[], setBars: React.Dispatch<React.Se
                 
                 // Encontrar qualquer presença relevante para este perfil
                 const userPresence = presences.find((presence: any) => 
-                  presence.userId === profile.barId && 
-                  presence.name === profile.name
+                  presence.userId === profile.id
                 );
                 
                 let isOnline = profile.isOnline; // Manter estado atual por padrão
                 
                 // Verificar estado de presença somente se existir uma presença para este usuário
-                if (userPresence) {
+                if (userPresence && typeof userPresence.online === 'boolean') {
                   // Se userPresence.online é explicitamente false, definir como offline
-                  // Caso contrário, manter estado atual (não mudar para online automaticamente)
                   if (userPresence.online === false) {
                     isOnline = false;
                   }
@@ -72,7 +70,9 @@ export const usePresenceChannel = (bars: Bar[], setBars: React.Dispatch<React.Se
           console.log(`Novo usuário detectado no bar ${bar.id}:`, key, newPresences);
           
           // Verificar se as novas presenças têm status offline explícito
-          const offlinePresence = newPresences.find((presence: any) => presence.online === false);
+          const offlinePresence = newPresences.find((presence: any) => 
+            presence.online === false
+          );
           
           if (offlinePresence) {
             console.log(`Usuário ${offlinePresence.name} marcado como offline explicitamente`);
@@ -83,7 +83,7 @@ export const usePresenceChannel = (bars: Bar[], setBars: React.Dispatch<React.Se
                 if (currentBar.id !== bar.id) return currentBar;
                 
                 const updatedProfiles = currentBar.profiles.map(profile => {
-                  if (profile.name === offlinePresence.name && profile.barId === offlinePresence.userId) {
+                  if (profile.id === offlinePresence.userId) {
                     return {
                       ...profile,
                       isOnline: false

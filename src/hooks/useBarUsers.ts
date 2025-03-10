@@ -47,6 +47,64 @@ export const useBarUsers = (barInfo: BarInfo | null, userId: string | null) => {
     if (barInfo) {
       fetchConnectedUsers();
       
+      // Setup database changes channel for user profile updates
+      const dbChannel = supabase
+        .channel('bar_profiles_changes')
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'bar_profiles',
+          filter: `bar_id=eq.${barInfo.barId}`
+        }, (payload) => {
+          console.log('Novo perfil detectado via Supabase Realtime:', payload);
+          
+          // Adicionar o novo usuário à lista
+          setConnectedUsers(current => {
+            // Verificar se o usuário já existe
+            const userExists = current.some(user => user.id === payload.new.id);
+            if (userExists) return current;
+            
+            const newUser = {
+              ...payload.new,
+              online: true // Inicialmente online
+            };
+            
+            // Notificar sobre novo usuário apenas se não for o usuário atual
+            if (payload.new.id !== userId) {
+              toast({
+                title: "Novo usuário",
+                description: `${payload.new.name} entrou no bar`
+              });
+            }
+            
+            return [...current, newUser];
+          });
+        })
+        .on('postgres_changes', {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'bar_profiles',
+          filter: `bar_id=eq.${barInfo.barId}`
+        }, (payload) => {
+          console.log('Usuário removido via Supabase Realtime:', payload);
+          
+          // Remover o usuário da lista
+          setConnectedUsers(current => 
+            current.filter(user => user.id !== payload.old.id)
+          );
+          
+          // Notificar sobre usuário removido apenas se não for o usuário atual
+          if (payload.old.id !== userId) {
+            toast({
+              title: "Usuário saiu",
+              description: `${payload.old.name} saiu do bar`
+            });
+          }
+        })
+        .subscribe((status) => {
+          console.log('Status da inscrição no canal para mudanças no banco de dados:', status);
+        });
+      
       // Setup presence channel for the specific bar
       const presenceChannelName = `presence:bar:${barInfo.barId}`;
       const presenceChannel = supabase.channel(presenceChannelName, {
@@ -113,58 +171,6 @@ export const useBarUsers = (barInfo: BarInfo | null, userId: string | null) => {
           } 
         })
         .subscribe();
-      
-      // Setup database changes channel for user profile updates
-      const dbChannel = supabase
-        .channel('bar_profiles_changes')
-        .on('postgres_changes', {
-          event: '*', // Listen for INSERT, UPDATE and DELETE events
-          schema: 'public',
-          table: 'bar_profiles',
-          filter: `bar_id=eq.${barInfo.barId}`
-        }, (payload) => {
-          console.log('DB change event for profiles:', payload);
-          
-          // When a new user joins (INSERT)
-          if (payload.eventType === 'INSERT') {
-            const newUser = payload.new as ConnectedUser;
-            setConnectedUsers(current => {
-              // Check if user already exists to avoid duplicates
-              const userExists = current.some(user => user.id === newUser.id);
-              if (userExists) return current;
-              return [...current, { ...newUser, online: true }]; // Initially online
-            });
-            
-            // Show notification for new user
-            if (newUser.id !== userId) {
-              toast({
-                title: "Novo usuário",
-                description: `${newUser.name} entrou no bar`
-              });
-            }
-          }
-          
-          // When a user leaves (DELETE)
-          else if (payload.eventType === 'DELETE') {
-            const deletedUser = payload.old as ConnectedUser;
-            
-            // Remove the user from the list
-            setConnectedUsers(current => 
-              current.filter(user => user.id !== deletedUser.id)
-            );
-            
-            // Show notification only if it's not the current user
-            if (deletedUser.id !== userId) {
-              toast({
-                title: "Usuário saiu",
-                description: `${deletedUser.name} saiu do bar`
-              });
-            }
-          }
-        });
-      
-      // Subscribe to both channels
-      dbChannel.subscribe();
       
       // Clean up channels when component unmounts
       return () => {

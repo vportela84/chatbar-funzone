@@ -33,9 +33,9 @@ export const useProfileStateUpdates = () => {
         return prevBars;
       }
       
-      // Verificar se o perfil já existe
+      // Verificar se o perfil já existe usando o ID único
       const profileExists = updatedBars[barIndex].profiles.some(
-        profile => profile.name === newProfile.name && profile.tableId === newProfile.table_id
+        profile => profile.id === newProfile.id
       );
       
       if (profileExists) {
@@ -45,6 +45,7 @@ export const useProfileStateUpdates = () => {
       
       // Criar novo perfil
       const newProfileObj: Profile = {
+        id: newProfile.id,
         name: newProfile.name,
         phone: newProfile.phone || '',
         tableId: newProfile.table_id,
@@ -102,8 +103,7 @@ export const useProfileStateUpdates = () => {
         // Se o usuário saiu definitivamente, remover o perfil
         console.log('Removendo permanentemente o perfil:', removedProfile.name);
         const updatedProfiles = updatedBars[barIndex].profiles.filter(
-          profile => !(profile.name === removedProfile.name && 
-                     profile.tableId === removedProfile.table_id)
+          profile => profile.id !== removedProfile.id
         );
         
         updatedBars[barIndex] = {
@@ -114,7 +114,7 @@ export const useProfileStateUpdates = () => {
         // Apenas marcar como offline se não for remoção permanente
         console.log('Marcando perfil como offline:', removedProfile.name);
         const updatedProfiles = updatedBars[barIndex].profiles.map(profile => {
-          if (profile.name === removedProfile.name && profile.tableId === removedProfile.table_id) {
+          if (profile.id === removedProfile.id) {
             return {
               ...profile,
               isOnline: false

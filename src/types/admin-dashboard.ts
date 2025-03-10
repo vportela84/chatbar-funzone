@@ -1,5 +1,6 @@
 
 export interface Profile {
+  id: string;
   name: string;
   phone: string;
   tableId: string;
