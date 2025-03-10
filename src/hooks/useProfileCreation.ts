@@ -1,4 +1,3 @@
-
 import { useToast } from '@/hooks/use-toast';
 import { UserProfile } from '@/types/bar';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,41 +5,37 @@ import { supabase } from '@/integrations/supabase/client';
 export const useProfileCreation = () => {
   const { toast } = useToast();
 
-  /**
-   * Verifica se um usuário com o número de telefone fornecido já existe
-   */
   const checkExistingUser = async (phone: string, barId: string): Promise<any | null> => {
     if (!phone || !barId) return null;
     
-    console.log('Verificando se usuário já existe:', { phone, barId });
+    console.log('Verificando usuário existente:', { phone, barId });
     
-    // Verificar formato do barId
+    // Check if barId is UUID format
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(barId);
+    console.log('barId é UUID?', isUUID);
     
     try {
-      let { data: existingUser, error } = null as any;
-      
+      // Query based on phone number first
+      let query = supabase
+        .from('bar_profiles')
+        .select('*')
+        .eq('phone', phone);
+
+      // Then filter by the appropriate bar_id field
       if (isUUID) {
-        // Buscar por uuid_bar_id
-        ({ data: existingUser, error } = await supabase
-          .from('bar_profiles')
-          .select('*')
-          .eq('uuid_bar_id', barId)
-          .eq('phone', phone)
-          .maybeSingle());
+        query = query.eq('uuid_bar_id', barId);
       } else {
-        // Buscar por bar_id 
-        ({ data: existingUser, error } = await supabase
-          .from('bar_profiles')
-          .select('*')
-          .eq('bar_id', barId)
-          .eq('phone', phone)
-          .maybeSingle());
+        query = query.eq('bar_id', barId);
+      }
+
+      const { data: existingUser, error } = await query.maybeSingle();
+      
+      if (error) {
+        console.error('Erro ao verificar usuário existente:', error);
+        throw error;
       }
       
-      if (error) throw error;
-      
-      console.log('Resultado da verificação de usuário existente:', existingUser);
+      console.log('Resultado da busca por usuário existente:', existingUser);
       return existingUser;
     } catch (error) {
       console.error('Erro ao verificar usuário existente:', error);
@@ -50,15 +45,17 @@ export const useProfileCreation = () => {
 
   const createNewProfile = async (profileData: UserProfile & { barId: string, tableId: string }) => {
     try {
-      // Se o telefone estiver preenchido, verificar se o usuário já existe
+      console.log('Iniciando criação/atualização de perfil:', profileData);
+      
+      // Check if user exists by phone number
       let existingUser = null;
       if (profileData.phone) {
         existingUser = await checkExistingUser(profileData.phone, profileData.barId);
       }
       
-      // Se encontrou usuário existente, retornar o ID dele
+      // If found existing user, return their ID
       if (existingUser) {
-        console.log('Usuário já existe, retornando ID existente:', existingUser.id);
+        console.log('Usuário existente encontrado:', existingUser);
         toast({
           title: "Perfil recuperado!",
           description: "Seu perfil foi recuperado com sucesso",
@@ -66,15 +63,10 @@ export const useProfileCreation = () => {
         return existingUser.id;
       }
       
-      // Se não encontrou, criar novo usuário
+      // If no existing user, create new profile
       const newUserId = crypto.randomUUID();
-      console.log('Criando novo perfil:', profileData);
-      
-      // Verificar formato do barId
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profileData.barId);
-      console.log('O barId é UUID?', isUUID, profileData.barId);
       
-      // Criar objeto com os dados do perfil
       const profileToInsert = {
         id: newUserId,
         name: profileData.name,
@@ -83,12 +75,16 @@ export const useProfileCreation = () => {
         interest: profileData.interest,
         table_id: profileData.tableId,
         uuid_bar_id: isUUID ? profileData.barId : null,
-        bar_id: isUUID ? null : profileData.barId
+        bar_id: !isUUID ? profileData.barId : null
       };
       
       console.log('Dados a serem inseridos:', profileToInsert);
       
-      const { error, data } = await supabase.from('bar_profiles').insert(profileToInsert).select();
+      const { error, data } = await supabase
+        .from('bar_profiles')
+        .insert(profileToInsert)
+        .select()
+        .single();
       
       if (error) {
         console.error('Erro ao salvar perfil:', error);
@@ -100,8 +96,7 @@ export const useProfileCreation = () => {
         return null;
       }
       
-      console.log('Perfil criado com sucesso, dados retornados:', data);
-      console.log('Perfil criado com sucesso, ID:', newUserId);
+      console.log('Perfil criado com sucesso:', data);
       toast({
         title: "Perfil criado!",
         description: "Seu perfil foi criado com sucesso",
