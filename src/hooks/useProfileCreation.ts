@@ -1,3 +1,4 @@
+
 import { useToast } from '@/hooks/use-toast';
 import { UserProfile } from '@/types/bar';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,33 +11,40 @@ export const useProfileCreation = () => {
     
     console.log('Verificando usuário existente:', { phone, barId });
     
-    // Check if barId is UUID format
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(barId);
-    console.log('barId é UUID?', isUUID);
-    
     try {
-      // Query based on phone number first
-      let query = supabase
+      // First query just by phone to see if the user exists in any bar
+      const { data: usersByPhone, error: phoneError } = await supabase
         .from('bar_profiles')
         .select('*')
         .eq('phone', phone);
-
-      // Then filter by the appropriate bar_id field
-      if (isUUID) {
-        query = query.eq('uuid_bar_id', barId);
-      } else {
-        query = query.eq('bar_id', barId);
-      }
-
-      const { data: existingUser, error } = await query.maybeSingle();
       
-      if (error) {
-        console.error('Erro ao verificar usuário existente:', error);
-        throw error;
+      if (phoneError) {
+        console.error('Erro ao verificar usuário por telefone:', phoneError);
+        throw phoneError;
       }
       
-      console.log('Resultado da busca por usuário existente:', existingUser);
-      return existingUser;
+      console.log(`Encontrados ${usersByPhone?.length || 0} usuários com o mesmo telefone:`, usersByPhone);
+      
+      // If we found users with this phone, check if any of them are in the current bar
+      if (usersByPhone && usersByPhone.length > 0) {
+        // Check if barId is UUID format
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(barId);
+        console.log('barId é UUID?', isUUID, barId);
+        
+        // Look for a matching user in the same bar
+        const existingUser = usersByPhone.find(user => {
+          if (isUUID) {
+            return user.uuid_bar_id === barId;
+          } else {
+            return user.bar_id === barId;
+          }
+        });
+        
+        console.log('Usuário existente no mesmo bar:', existingUser);
+        return existingUser || null;
+      }
+      
+      return null;
     } catch (error) {
       console.error('Erro ao verificar usuário existente:', error);
       return null;
