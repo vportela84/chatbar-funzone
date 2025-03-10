@@ -82,11 +82,84 @@ export const useProfileData = () => {
     }
   };
 
+  // Atualiza o estado quando um novo perfil é adicionado
+  const updateBarsWithNewProfile = (newProfile: any) => {
+    setBars(currentBars => {
+      return currentBars.map(bar => {
+        if (bar.id === newProfile.bar_id) {
+          return {
+            ...bar,
+            profiles: [
+              ...bar.profiles,
+              {
+                name: newProfile.name,
+                phone: newProfile.phone || '',
+                tableId: newProfile.table_id,
+                barId: newProfile.bar_id,
+                photo: newProfile.photo,
+                interest: newProfile.interest,
+                isOnline: true
+              }
+            ]
+          };
+        }
+        return bar;
+      });
+    });
+
+    // Notificar o administrador sobre o novo perfil
+    toast({
+      title: "Novo cliente!",
+      description: `${newProfile.name} entrou no bar.`,
+    });
+  };
+
+  // Atualiza o estado quando um perfil é removido
+  const updateBarsWithRemovedProfile = (removedProfile: any) => {
+    setBars(currentBars => {
+      return currentBars.map(bar => {
+        if (bar.id === removedProfile.bar_id) {
+          return {
+            ...bar,
+            profiles: bar.profiles.filter(
+              profile => !(profile.name === removedProfile.name && 
+                           profile.tableId === removedProfile.table_id)
+            )
+          };
+        }
+        return bar;
+      });
+    });
+  };
+
   useEffect(() => {
     loadBarsAndProfiles();
-    // Atualiza a cada 30 segundos
-    const interval = setInterval(loadBarsAndProfiles, 30000);
-    return () => clearInterval(interval);
+    
+    // Configurar channel para receber atualizações em tempo real
+    const channel = supabase
+      .channel('admin-dashboard-profiles')
+      .on('postgres_changes', {
+        event: 'INSERT', 
+        schema: 'public',
+        table: 'bar_profiles'
+      }, (payload) => {
+        console.log('Novo perfil detectado:', payload);
+        updateBarsWithNewProfile(payload.new);
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'bar_profiles'
+      }, (payload) => {
+        console.log('Perfil removido:', payload);
+        updateBarsWithRemovedProfile(payload.old);
+      })
+      .subscribe();
+
+    // Limpar a subscription quando o componente for desmontado
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   return {
