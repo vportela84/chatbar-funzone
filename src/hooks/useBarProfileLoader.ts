@@ -22,7 +22,7 @@ export const useBarProfileLoader = () => {
       setIsLoading(true);
       console.log(`Carregando perfis para o bar: ${barId}`);
       
-      // Consulta para verificar se o barId está no campo bar_id ou uuid_bar_id
+      // Reformulação da query para usar filter corretamente
       const { data, error } = await supabase
         .from('bar_profiles')
         .select('*')

@@ -14,6 +14,7 @@ export const useProfileCreation = () => {
       // Verificar se o barId está no formato UUID
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profileData.barId);
       
+      // Criar objeto com os dados do perfil
       const profileToInsert = {
         id: newUserId,
         name: profileData.name,

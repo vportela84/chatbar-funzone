@@ -4,10 +4,12 @@ import { BarInfo, ConnectedUser } from '@/types/bar';
 import { useBarProfileLoader } from './useBarProfileLoader';
 import { useRealtimeProfileUpdates } from './useRealtimeProfileUpdates';
 import { usePresenceSync } from './usePresenceSync';
+import { useToast } from '@/hooks/use-toast';
 
 export const useBarUsers = (barInfo: BarInfo | null, userId: string | null) => {
   const [connectedUsers, setConnectedUsers] = useState<ConnectedUser[]>([]);
   const { loadBarProfiles, isLoading } = useBarProfileLoader();
+  const { toast } = useToast();
 
   // Carregar perfis iniciais
   useEffect(() => {
@@ -18,9 +20,22 @@ export const useBarUsers = (barInfo: BarInfo | null, userId: string | null) => {
       }
       
       console.log(`Carregando perfis iniciais para bar: ${barInfo.barId}`);
-      const profiles = await loadBarProfiles(barInfo.barId);
-      console.log(`Perfis carregados (${profiles.length}):`, profiles);
-      setConnectedUsers(profiles);
+      try {
+        const profiles = await loadBarProfiles(barInfo.barId);
+        console.log(`Perfis carregados (${profiles.length}):`, profiles);
+        setConnectedUsers(profiles);
+        
+        if (profiles.length === 0) {
+          console.warn('Nenhum perfil encontrado para este bar');
+        }
+      } catch (error) {
+        console.error('Erro ao carregar perfis:', error);
+        toast({
+          title: "Erro",
+          description: "Ocorreu um erro ao carregar perfis de usuários",
+          variant: "destructive"
+        });
+      }
     };
     
     if (barInfo) {
@@ -29,7 +44,7 @@ export const useBarUsers = (barInfo: BarInfo | null, userId: string | null) => {
     } else {
       console.warn('BarInfo não disponível, não é possível buscar usuários');
     }
-  }, [barInfo, loadBarProfiles]);
+  }, [barInfo, loadBarProfiles, toast]);
 
   // Configurar atualizações em tempo real para mudanças de perfis no banco de dados
   useRealtimeProfileUpdates(barInfo?.barId, userId, setConnectedUsers);
