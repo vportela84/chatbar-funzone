@@ -30,12 +30,14 @@ export const useRealtimeDatabaseUpdates = (
         console.log('Perfil removido via Supabase Realtime:', payload);
         onProfileRemoved(payload.old);
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Status da inscrição no canal de realtime:', status);
+      });
 
     // Limpar canal ao desmontar o componente
     return () => {
-      console.log('Limpando canais de Supabase');
-      supabase.removeAllChannels();
+      console.log('Limpando canais de Supabase Realtime');
+      supabase.removeChannel(channel);
     };
   }, [onProfileAdded, onProfileRemoved]);
 };

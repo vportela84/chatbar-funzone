@@ -22,6 +22,9 @@ interface BarCardProps {
 }
 
 const BarCard = ({ name, profiles, translateInterest }: BarCardProps) => {
+  // Contar usuários online
+  const onlineCount = profiles.filter(profile => profile.isOnline).length;
+
   return (
     <Card className="bg-bar-bg/50 backdrop-blur-sm border-primary/20 shadow-lg hover:shadow-xl transition-all duration-300">
       <CardHeader className="bg-black/20 rounded-t-lg p-3 md:p-6">
@@ -29,7 +32,7 @@ const BarCard = ({ name, profiles, translateInterest }: BarCardProps) => {
           <CardTitle className="text-primary text-base md:text-xl">{name}</CardTitle>
           <Badge variant="outline" className="flex items-center gap-2 text-black bg-primary text-xs md:text-sm">
             <Users className="w-3 h-3 md:w-4 md:h-4" />
-            {profiles.length} online
+            {onlineCount} online
           </Badge>
         </div>
       </CardHeader>

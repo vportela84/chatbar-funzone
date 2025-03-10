@@ -28,7 +28,7 @@ export const useProfileStateUpdates = () => {
       const barIndex = updatedBars.findIndex(bar => bar.id === barId);
       
       if (barIndex === -1) {
-        console.log(`Bar com ID ${barId} não encontrado. Atualizando barIds disponíveis:`, 
+        console.log(`Bar com ID ${barId} não encontrado. Bar IDs disponíveis:`, 
           updatedBars.map(b => b.id));
         return prevBars;
       }
@@ -57,10 +57,12 @@ export const useProfileStateUpdates = () => {
       console.log('Adicionando novo perfil ao bar:', newProfileObj);
       
       // Atualizar o bar específico com o novo perfil
-      updatedBars[barIndex] = {
+      const updatedBar = {
         ...updatedBars[barIndex],
         profiles: [...updatedBars[barIndex].profiles, newProfileObj]
       };
+      
+      updatedBars[barIndex] = updatedBar;
       
       console.log('Lista de bares atualizada:', updatedBars);
       return updatedBars;
@@ -91,17 +93,20 @@ export const useProfileStateUpdates = () => {
       const barIndex = updatedBars.findIndex(bar => bar.id === barId);
       
       if (barIndex === -1) {
-        console.log(`Bar com ID ${barId} não encontrado`);
+        console.log(`Bar com ID ${barId} não encontrado. Bar IDs disponíveis:`, 
+          updatedBars.map(b => b.id));
         return prevBars;
       }
       
       // Filtrar o perfil removido
+      const updatedProfiles = updatedBars[barIndex].profiles.filter(
+        profile => !(profile.name === removedProfile.name && 
+                   profile.tableId === removedProfile.table_id)
+      );
+      
       updatedBars[barIndex] = {
         ...updatedBars[barIndex],
-        profiles: updatedBars[barIndex].profiles.filter(
-          profile => !(profile.name === removedProfile.name && 
-                     profile.tableId === removedProfile.table_id)
-        )
+        profiles: updatedProfiles
       };
       
       console.log('Lista de bares após remoção:', updatedBars);
