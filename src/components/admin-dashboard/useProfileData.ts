@@ -1,262 +1,31 @@
-import { useState, useEffect } from 'react';
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from '@/hooks/use-toast';
 
-export interface Profile {
-  name: string;
-  phone: string;
-  tableId: string;
-  barId: string;
-  photo?: string;
-  interest?: string;
-  isOnline?: boolean;
-}
-
-export interface Bar {
-  id: string;
-  name: string;
-  profiles: Profile[];
-}
+import { useEffect } from 'react';
+import { translateInterest } from '@/utils/interestTranslator';
+import { useProfileStateUpdates } from '@/hooks/useProfileStateUpdates';
+import { useBarProfilesLoader } from '@/hooks/useBarProfilesLoader';
+import { useRealtimeDatabaseUpdates } from '@/hooks/useRealtimeDatabaseUpdates';
+import { usePresenceChannel } from '@/hooks/usePresenceChannel';
 
 export const useProfileData = () => {
-  const [bars, setBars] = useState<Bar[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
-
-  const translateInterest = (interest: string): string => {
-    switch (interest) {
-      case 'men':
-        return 'Homens';
-      case 'women':
-        return 'Mulheres';
-      case 'all':
-      default:
-        return 'Todos';
-    }
-  };
-
-  const loadBarsAndProfiles = async () => {
-    try {
-      setIsLoading(true);
-      const { data: barsData, error: barsError } = await supabase
-        .from('bars')
-        .select('*');
-
-      if (barsError) throw barsError;
-
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('bar_profiles')
-        .select('*');
-
-      if (profilesError) throw profilesError;
-
-      console.log('Dados de perfis carregados:', profilesData);
-
-      // Inicializar os bares com os usuários e seus estados de presença
-      const barsWithProfiles = barsData.map(bar => {
-        // Filtrar perfis para este bar
-        const barProfiles = profilesData
-          .filter(profile => profile.bar_id === bar.id || profile.uuid_bar_id === bar.id)
-          .map(profile => ({
-            name: profile.name,
-            phone: profile.phone || '',
-            tableId: profile.table_id,
-            barId: profile.bar_id || profile.uuid_bar_id,
-            photo: profile.photo,
-            interest: profile.interest,
-            isOnline: false // Inicialmente, todos estão offline
-          }));
-
-        return {
-          id: bar.id,
-          name: bar.name,
-          profiles: barProfiles
-        };
-      });
-
-      console.log('Bares com perfis inicializados:', barsWithProfiles);
-      setBars(barsWithProfiles);
-
-      // Configurar canais de presença para cada bar
-      barsWithProfiles.forEach(bar => {
-        const presenceChannel = supabase.channel(`presence:bar:${bar.id}`);
-        
-        presenceChannel
-          .on('presence', { event: 'sync' }, () => {
-            const presenceState = presenceChannel.presenceState();
-            console.log(`Estado de presença para bar ${bar.id}:`, presenceState);
-            
-            // Atualizar estado online dos usuários
-            setBars(currentBars => {
-              return currentBars.map(currentBar => {
-                if (currentBar.id !== bar.id) return currentBar;
-                
-                return {
-                  ...currentBar,
-                  profiles: currentBar.profiles.map(profile => ({
-                    ...profile,
-                    isOnline: Object.values(presenceState)
-                      .flat()
-                      .some((presence: any) => presence.userId === profile.barId)
-                  }))
-                };
-              });
-            });
-          })
-          .subscribe();
-      });
-
-    } catch (error) {
-      console.error('Erro ao carregar dados:', error);
-      toast({
-        title: "Erro ao carregar dados",
-        description: "Não foi possível carregar as informações dos bares",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const updateBarsWithNewProfile = (newProfile: any) => {
-    console.log('Recebido novo perfil para adicionar:', newProfile);
-    
-    // Identificar o id do bar corretamente
-    const barId = newProfile.uuid_bar_id || newProfile.bar_id;
-    console.log('ID do bar identificado:', barId);
-    
-    if (!barId) {
-      console.error('Perfil sem ID de bar válido:', newProfile);
-      return;
-    }
-
-    // Usar um callback funcional para garantir que estamos trabalhando com o estado mais recente
-    setBars(prevBars => {
-      // Crie uma cópia do array de bares atual
-      const updatedBars = [...prevBars];
-      
-      // Encontrar o índice do bar
-      const barIndex = updatedBars.findIndex(bar => bar.id === barId);
-      
-      if (barIndex === -1) {
-        console.log(`Bar com ID ${barId} não encontrado. Atualizando barIds disponíveis:`, 
-          updatedBars.map(b => b.id));
-        // Se o bar não existe no estado atual, recarregar todos os bares
-        loadBarsAndProfiles();
-        return prevBars;
-      }
-      
-      // Verificar se o perfil já existe
-      const profileExists = updatedBars[barIndex].profiles.some(
-        profile => profile.name === newProfile.name && profile.tableId === newProfile.table_id
-      );
-      
-      if (profileExists) {
-        console.log('Perfil já existe, sem alterações:', newProfile);
-        return prevBars;
-      }
-      
-      // Criar novo perfil
-      const newProfileObj: Profile = {
-        name: newProfile.name,
-        phone: newProfile.phone || '',
-        tableId: newProfile.table_id,
-        barId: barId,
-        photo: newProfile.photo,
-        interest: newProfile.interest,
-        isOnline: true
-      };
-      
-      console.log('Adicionando novo perfil ao bar:', newProfileObj);
-      
-      // Atualizar o bar específico com o novo perfil
-      updatedBars[barIndex] = {
-        ...updatedBars[barIndex],
-        profiles: [...updatedBars[barIndex].profiles, newProfileObj]
-      };
-      
-      console.log('Lista de bares atualizada:', updatedBars);
-      return updatedBars;
-    });
-
-    toast({
-      title: "Novo cliente!",
-      description: `${newProfile.name} entrou no bar.`,
-    });
-  };
-
-  const updateBarsWithRemovedProfile = (removedProfile: any) => {
-    console.log('Removendo perfil:', removedProfile);
-    
-    // Identificar o id do bar corretamente
-    const barId = removedProfile.uuid_bar_id || removedProfile.bar_id;
-    
-    if (!barId) {
-      console.error('Perfil removido sem ID de bar válido:', removedProfile);
-      return;
-    }
-
-    setBars(prevBars => {
-      // Criar uma cópia do array de bares atual
-      const updatedBars = [...prevBars];
-      
-      // Encontrar o índice do bar
-      const barIndex = updatedBars.findIndex(bar => bar.id === barId);
-      
-      if (barIndex === -1) {
-        console.log(`Bar com ID ${barId} não encontrado`);
-        return prevBars;
-      }
-      
-      // Filtrar o perfil removido
-      updatedBars[barIndex] = {
-        ...updatedBars[barIndex],
-        profiles: updatedBars[barIndex].profiles.filter(
-          profile => !(profile.name === removedProfile.name && 
-                     profile.tableId === removedProfile.table_id)
-        )
-      };
-      
-      console.log('Lista de bares após remoção:', updatedBars);
-      return updatedBars;
-    });
-
-    toast({
-      title: "Cliente saiu",
-      description: `${removedProfile.name} saiu do bar.`,
-    });
-  };
-
+  const {
+    bars,
+    setBars,
+    updateBarsWithNewProfile,
+    updateBarsWithRemovedProfile
+  } = useProfileStateUpdates();
+  
+  const { isLoading, loadBarsAndProfiles } = useBarProfilesLoader(setBars);
+  
+  // Set up realtime database updates
+  useRealtimeDatabaseUpdates(updateBarsWithNewProfile, updateBarsWithRemovedProfile);
+  
+  // Set up presence channels for online/offline status
+  usePresenceChannel(bars, setBars);
+  
+  // Load initial data
   useEffect(() => {
     console.log('Inicializando hook useProfileData');
     loadBarsAndProfiles();
-    
-    // Configurar channel para receber atualizações em tempo real
-    const channel = supabase
-      .channel('admin-dashboard-profiles')
-      .on('postgres_changes', {
-        event: 'INSERT', 
-        schema: 'public',
-        table: 'bar_profiles'
-      }, (payload) => {
-        console.log('Novo perfil detectado via Supabase Realtime:', payload);
-        updateBarsWithNewProfile(payload.new);
-      })
-      .on('postgres_changes', {
-        event: 'DELETE',
-        schema: 'public',
-        table: 'bar_profiles'
-      }, (payload) => {
-        console.log('Perfil removido via Supabase Realtime:', payload);
-        updateBarsWithRemovedProfile(payload.old);
-      })
-      .subscribe();
-
-    // Limpar canal ao desmontar o componente
-    return () => {
-      console.log('Limpando canais de Supabase');
-      supabase.removeAllChannels();
-    };
   }, []);
 
   return {
@@ -266,3 +35,6 @@ export const useProfileData = () => {
     translateInterest
   };
 };
+
+// Re-export types for convenience
+export type { Profile, Bar } from '@/types/admin-dashboard';
