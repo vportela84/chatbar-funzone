@@ -33,14 +33,16 @@ export const usePresenceChannel = (bars: Bar[], setBars: React.Dispatch<React.Se
               if (currentBar.id !== bar.id) return currentBar;
               
               const updatedProfiles = currentBar.profiles.map(profile => {
-                // Melhorando a detecção de presença verificando tanto barId quanto tableId
+                // Verifica explicitamente o status online nas informações de presença
                 const isOnline = Object.values(presenceState)
                   .some(presences => {
                     return presences.some((presence: any) => {
                       const userId = presence.userId || '';
-                      return userId === profile.barId || 
-                             userId === profile.tableId || 
-                             userId.includes(profile.tableId);
+                      const onlineStatus = presence.online !== false; // Se online for false, considera offline
+                      
+                      return (userId === profile.barId || userId === profile.tableId || 
+                             userId === profile.name || userId.includes(profile.tableId)) && 
+                             onlineStatus;
                     });
                   });
                 
@@ -62,11 +64,16 @@ export const usePresenceChannel = (bars: Bar[], setBars: React.Dispatch<React.Se
         .on('presence', { event: 'join' }, ({ key, newPresences }) => {
           console.log(`Novo usuário entrou no bar ${bar.id}:`, key, newPresences);
           
-          // Forçar uma sincronização após uma entrada
-          setTimeout(() => {
-            const presenceState = presenceChannel.presenceState();
-            console.log(`Estado de presença após entrada em ${bar.id}:`, presenceState);
-          }, 300);
+          // Verifica se as novas presenças têm status online definido explicitamente
+          const onlinePresences = newPresences.filter((presence: any) => presence.online !== false);
+          
+          if (onlinePresences.length > 0) {
+            // Forçar uma sincronização após uma entrada
+            setTimeout(() => {
+              const presenceState = presenceChannel.presenceState();
+              console.log(`Estado de presença após entrada em ${bar.id}:`, presenceState);
+            }, 300);
+          }
         })
         .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
           console.log(`Usuário saiu do bar ${bar.id}:`, key, leftPresences);
@@ -98,4 +105,3 @@ export const usePresenceChannel = (bars: Bar[], setBars: React.Dispatch<React.Se
     };
   }, [bars, setBars]);
 };
-

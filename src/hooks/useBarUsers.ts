@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { ConnectedUser, BarInfo, PresenceState } from '@/types/bar';
+import { ConnectedUser, BarInfo } from '@/types/bar';
 
 export const useBarUsers = (barInfo: BarInfo | null, userId: string | null) => {
   const [connectedUsers, setConnectedUsers] = useState<ConnectedUser[]>([]);
@@ -28,10 +28,10 @@ export const useBarUsers = (barInfo: BarInfo | null, userId: string | null) => {
             variant: "destructive"
           });
         } else {
-          // Initialize all users as offline by default
+          // Inicializar todos como online por padrão, até que o canal de presença indique o contrário
           const usersWithPresence = data?.map(user => ({
             ...user,
-            online: false
+            online: true
           })) || [];
           
           setConnectedUsers(usersWithPresence);
@@ -57,17 +57,22 @@ export const useBarUsers = (barInfo: BarInfo | null, userId: string | null) => {
           const newState = presenceChannel.presenceState();
           console.log('Presence sync:', newState);
           
-          // Update users with their online status
+          // Update users with their online status based on explicit online field
           setConnectedUsers(currentUsers => {
             return currentUsers.map(user => {
-              // Check if this user has a presence state
-              const userPresence = Object.values(newState)
+              // Verificar se há informação de presença para este usuário
+              const userPresences = Object.values(newState)
                 .flat()
-                .find((presence: any) => presence.userId === user.id);
+                .filter((presence: any) => presence.userId === user.id);
+              
+              // Se não houver informação de presença, manter como online
+              // Se houver e alguma delas tiver online = false, considerar offline
+              const isUserOffline = userPresences.length > 0 && 
+                userPresences.some((presence: any) => presence.online === false);
               
               return {
                 ...user,
-                online: !!userPresence // If user presence exists, they're online
+                online: !isUserOffline // Se não foi marcado explicitamente como offline, considerar online
               };
             });
           });
@@ -75,8 +80,15 @@ export const useBarUsers = (barInfo: BarInfo | null, userId: string | null) => {
         .on('presence', { event: 'join' }, ({ key, newPresences }) => {
           console.log('User joined:', key, newPresences);
           
-          // Handle new user joining (already handled by sync event)
-          if (newPresences && newPresences.length > 0 && newPresences[0].name) {
+          // Verificar se alguma presença tem status online = false
+          const offlinePresence = newPresences.find((presence: any) => presence.online === false);
+          
+          if (offlinePresence && offlinePresence.name) {
+            toast({
+              title: "Usuário offline",
+              description: `${offlinePresence.name} está offline agora`,
+            });
+          } else if (newPresences && newPresences.length > 0 && newPresences[0].name) {
             toast({
               title: "Usuário online",
               description: `${newPresences[0].name || 'Alguém'} está online agora`,
@@ -86,15 +98,8 @@ export const useBarUsers = (barInfo: BarInfo | null, userId: string | null) => {
         .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
           console.log('User left:', key, leftPresences);
           
-          // Handle user leaving (already handled by sync event)
-          if (leftPresences && leftPresences.length > 0 && 
-              leftPresences[0].userId !== userId && 
-              leftPresences[0].name) {
-            toast({
-              title: "Usuário offline",
-              description: `${leftPresences[0].name || 'Alguém'} está offline agora`,
-            });
-          }
+          // Evento de leave só é chamado quando a conexão é perdida, não quando o usuário clica em sair
+          // Por isso, não fazemos nada aqui pois o usuário só deve ficar offline quando clicar em sair
         });
       
       // Setup database changes channel for user profile updates
@@ -115,7 +120,7 @@ export const useBarUsers = (barInfo: BarInfo | null, userId: string | null) => {
               // Check if user already exists to avoid duplicates
               const userExists = current.some(user => user.id === newUser.id);
               if (userExists) return current;
-              return [...current, { ...newUser, online: false }];
+              return [...current, { ...newUser, online: true }]; // Inicialmente online
             });
             
             // Show notification for new user
@@ -133,13 +138,24 @@ export const useBarUsers = (barInfo: BarInfo | null, userId: string | null) => {
             setConnectedUsers(current => 
               current.filter(user => user.id !== deletedUser.id)
             );
+            
+            // Show notification only if it's not the current user
+            if (deletedUser.id !== userId) {
+              toast({
+                title: "Usuário saiu",
+                description: `${deletedUser.name} saiu do bar`
+              });
+            }
           }
           
           // When a user updates their profile (UPDATE)
           else if (payload.eventType === 'UPDATE') {
             const updatedUser = payload.new as ConnectedUser;
             setConnectedUsers(current => 
-              current.map(user => user.id === updatedUser.id ? { ...updatedUser, online: user.online } : user)
+              current.map(user => user.id === updatedUser.id ? 
+                { ...updatedUser, online: user.online } : 
+                user
+              )
             );
           }
         });

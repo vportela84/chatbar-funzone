@@ -22,16 +22,30 @@ export const useProfileActions = (barInfo: BarInfo | null, userId: string | null
           const presenceTrackStatus = await presenceChannel.track({
             userId,
             name,
+            online: true,
             lastSeen: new Date().toISOString()
           });
           console.log('Presence tracked:', presenceTrackStatus);
         }
       });
     } else {
-      // When user leaves, we don't need to set status to offline
-      // as the presence system will automatically handle that
-      // when the subscription is removed
-      supabase.removeChannel(presenceChannel);
+      // Quando o usuário sai explicitamente, marcamos como offline antes de remover o canal
+      await presenceChannel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await presenceChannel.track({
+            userId,
+            name,
+            online: false,
+            lastSeen: new Date().toISOString()
+          });
+          console.log('User marked as offline before leaving');
+          
+          // Aguarda um momento para garantir que a atualização foi processada
+          setTimeout(() => {
+            supabase.removeChannel(presenceChannel);
+          }, 500);
+        }
+      });
     }
   };
 
@@ -108,32 +122,38 @@ export const useProfileActions = (barInfo: BarInfo | null, userId: string | null
 
   // Leave the bar
   const leaveBar = () => {
-    // Set presence to offline
+    // Set presence to offline explicitly before removing profile
     if (barInfo && userId) {
-      trackPresence(barInfo.barId, userId, '', 'offline');
+      const storedProfile = sessionStorage.getItem('userProfile');
+      const userName = storedProfile ? JSON.parse(storedProfile).name : '';
+      trackPresence(barInfo.barId, userId, userName, 'offline');
     }
     
-    // Remove profile from database
-    if (userId) {
-      supabase.from('bar_profiles').delete().eq('id', userId).then(({ error }) => {
-        if (error) {
-          console.error('Erro ao remover perfil:', error);
-        }
+    // Remove profile from database after a short delay to ensure offline status is updated
+    setTimeout(() => {
+      if (userId) {
+        supabase.from('bar_profiles').delete().eq('id', userId).then(({ error }) => {
+          if (error) {
+            console.error('Erro ao remover perfil:', error);
+          } else {
+            console.log('Perfil removido com sucesso após marcado como offline');
+          }
+        });
+      }
+      
+      // Clear sessionStorage
+      sessionStorage.removeItem('userProfile');
+      sessionStorage.removeItem('userId');
+      sessionStorage.removeItem('currentBar');
+      sessionStorage.removeItem('chatTarget');
+      
+      toast({
+        title: "Bar desconectado",
+        description: "Você saiu do bar",
       });
-    }
-    
-    // Clear sessionStorage
-    sessionStorage.removeItem('userProfile');
-    sessionStorage.removeItem('userId');
-    sessionStorage.removeItem('currentBar');
-    sessionStorage.removeItem('chatTarget');
-    
-    toast({
-      title: "Bar desconectado",
-      description: "Você saiu do bar",
-    });
-    
-    navigate('/');
+      
+      navigate('/');
+    }, 1000);
   };
 
   return {
