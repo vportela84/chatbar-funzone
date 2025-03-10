@@ -36,6 +36,8 @@ export const useRealtimeDatabaseUpdates = (
         console.log('Status da inscrição no canal de realtime:', status);
         if (status !== 'SUBSCRIBED') {
           console.error('Falha ao se inscrever no canal de realtime:', status);
+        } else {
+          console.log('Inscrição no canal de realtime concluída com sucesso');
         }
       });
 

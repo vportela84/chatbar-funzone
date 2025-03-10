@@ -51,7 +51,7 @@ export const useProfileStateUpdates = () => {
         barId: barId,
         photo: newProfile.photo,
         interest: newProfile.interest,
-        isOnline: true
+        isOnline: true // Inicialmente online
       };
       
       console.log('Adicionando novo perfil ao bar:', newProfileObj);
@@ -126,4 +126,3 @@ export const useProfileStateUpdates = () => {
     updateBarsWithRemovedProfile
   };
 };
-

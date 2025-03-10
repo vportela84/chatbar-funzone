@@ -12,6 +12,8 @@ export const useProfileActions = (barInfo: BarInfo | null, userId: string | null
   const trackPresence = async (barId: string, userId: string, name: string, status: 'online' | 'offline') => {
     if (!barId || !userId) return;
     
+    console.log(`Tracking presence for user ${name} (${userId}) in bar ${barId} as ${status}`);
+    
     const presenceChannelName = `presence:bar:${barId}`;
     const presenceChannel = supabase.channel(presenceChannelName);
     
@@ -25,25 +27,26 @@ export const useProfileActions = (barInfo: BarInfo | null, userId: string | null
             online: true,
             lastSeen: new Date().toISOString()
           });
-          console.log('Presence tracked:', presenceTrackStatus);
+          console.log('Presence tracked as ONLINE:', presenceTrackStatus);
         }
       });
     } else {
       // Quando o usuário sai explicitamente, marcamos como offline antes de remover o canal
       await presenceChannel.subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          await presenceChannel.track({
+          console.log(`Marking user ${userId} (${name}) as OFFLINE before leaving`);
+          const trackStatus = await presenceChannel.track({
             userId,
             name,
             online: false,
             lastSeen: new Date().toISOString()
           });
-          console.log('User marked as offline before leaving');
+          console.log('User marked as offline, status:', trackStatus);
           
           // Aguarda um momento para garantir que a atualização foi processada
           setTimeout(() => {
             supabase.removeChannel(presenceChannel);
-          }, 500);
+          }, 1000);
         }
       });
     }
@@ -121,39 +124,48 @@ export const useProfileActions = (barInfo: BarInfo | null, userId: string | null
   };
 
   // Leave the bar
-  const leaveBar = () => {
-    // Set presence to offline explicitly before removing profile
+  const leaveBar = async () => {
+    // Always mark as offline before removing profile
     if (barInfo && userId) {
       const storedProfile = sessionStorage.getItem('userProfile');
       const userName = storedProfile ? JSON.parse(storedProfile).name : '';
-      trackPresence(barInfo.barId, userId, userName, 'offline');
-    }
-    
-    // Remove profile from database after a short delay to ensure offline status is updated
-    setTimeout(() => {
-      if (userId) {
-        supabase.from('bar_profiles').delete().eq('id', userId).then(({ error }) => {
+      console.log(`User ${userName} (${userId}) is leaving bar ${barInfo.barId}`);
+      
+      // Explicitly set presence to offline
+      await trackPresence(barInfo.barId, userId, userName, 'offline');
+      
+      // Remove profile from database after a delay to ensure offline status is updated
+      setTimeout(async () => {
+        if (userId) {
+          const { error } = await supabase.from('bar_profiles').delete().eq('id', userId);
           if (error) {
             console.error('Erro ao remover perfil:', error);
           } else {
             console.log('Perfil removido com sucesso após marcado como offline');
           }
+        }
+        
+        // Clear sessionStorage
+        sessionStorage.removeItem('userProfile');
+        sessionStorage.removeItem('userId');
+        sessionStorage.removeItem('currentBar');
+        sessionStorage.removeItem('chatTarget');
+        
+        toast({
+          title: "Bar desconectado",
+          description: "Você saiu do bar",
         });
-      }
-      
-      // Clear sessionStorage
+        
+        navigate('/');
+      }, 2000); // Increased delay to ensure offline status is processed
+    } else {
+      // Just clean up if no bar info or userId
       sessionStorage.removeItem('userProfile');
       sessionStorage.removeItem('userId');
       sessionStorage.removeItem('currentBar');
       sessionStorage.removeItem('chatTarget');
-      
-      toast({
-        title: "Bar desconectado",
-        description: "Você saiu do bar",
-      });
-      
       navigate('/');
-    }, 1000);
+    }
   };
 
   return {
