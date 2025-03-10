@@ -20,8 +20,10 @@ export const useRealtimeDatabaseUpdates = (
         table: 'bar_profiles'
       }, (payload) => {
         console.log('Novo perfil detectado via Supabase Realtime:', payload);
-        // Chamar o handler imediatamente
-        onProfileAdded(payload.new);
+        // Chamar o handler imediatamente com um atraso para garantir que outros processos de inicialização terminaram
+        setTimeout(() => {
+          onProfileAdded(payload.new);
+        }, 100);
       })
       .on('postgres_changes', {
         event: 'DELETE',
@@ -29,8 +31,14 @@ export const useRealtimeDatabaseUpdates = (
         table: 'bar_profiles'
       }, (payload) => {
         console.log('Perfil removido via Supabase Realtime:', payload);
-        // Chamar o handler imediatamente
-        onProfileRemoved(payload.old);
+        // Garantir que o status offline persista definindo isOfflinePermanent no payload
+        const modifiedPayload = {
+          ...payload.old,
+          isOfflinePermanent: true
+        };
+        
+        // Chamar o handler com o payload modificado
+        onProfileRemoved(modifiedPayload);
       })
       .subscribe((status) => {
         console.log('Status da inscrição no canal de realtime:', status);

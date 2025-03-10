@@ -34,17 +34,24 @@ export const usePresenceChannel = (bars: Bar[], setBars: React.Dispatch<React.Se
               
               const updatedProfiles = currentBar.profiles.map(profile => {
                 // Verificar se há presença para este perfil
-                const hasPresence = Object.values(presenceState)
-                  .some(presences => {
-                    return presences.some((presence: any) => {
-                      // Verificar o ID do usuário e campo online
-                      const userId = presence.userId || '';
-                      return userId === profile.barId && presence.online !== false;
-                    });
-                  });
+                const presences = Object.values(presenceState).flat();
                 
-                // Se não tiver presença ou presença explícita como offline, considerar como offline
-                const isOnline = hasPresence;
+                // Encontrar qualquer presença relevante para este perfil
+                const userPresence = presences.find((presence: any) => 
+                  presence.userId === profile.barId && 
+                  presence.name === profile.name
+                );
+                
+                let isOnline = profile.isOnline; // Manter estado atual por padrão
+                
+                // Verificar estado de presença somente se existir uma presença para este usuário
+                if (userPresence) {
+                  // Se userPresence.online é explicitamente false, definir como offline
+                  // Caso contrário, manter estado atual (não mudar para online automaticamente)
+                  if (userPresence.online === false) {
+                    isOnline = false;
+                  }
+                }
                 
                 return {
                   ...profile,
@@ -64,30 +71,34 @@ export const usePresenceChannel = (bars: Bar[], setBars: React.Dispatch<React.Se
         .on('presence', { event: 'join' }, ({ key, newPresences }) => {
           console.log(`Novo usuário detectado no bar ${bar.id}:`, key, newPresences);
           
-          // Verificar se as novas presenças têm status online
-          const onlinePresence = newPresences.find((presence: any) => presence.online !== false);
+          // Verificar se as novas presenças têm status offline explícito
           const offlinePresence = newPresences.find((presence: any) => presence.online === false);
           
           if (offlinePresence) {
-            console.log(`Usuário ${offlinePresence.name || offlinePresence.userId} marcado como offline explicitamente`);
-          } else if (onlinePresence) {
-            console.log(`Usuário ${onlinePresence.name || onlinePresence.userId} está online agora`);
+            console.log(`Usuário ${offlinePresence.name} marcado como offline explicitamente`);
+            
+            // Atualizar o status para offline imediatamente
+            setBars(currentBars => {
+              return currentBars.map(currentBar => {
+                if (currentBar.id !== bar.id) return currentBar;
+                
+                const updatedProfiles = currentBar.profiles.map(profile => {
+                  if (profile.name === offlinePresence.name && profile.barId === offlinePresence.userId) {
+                    return {
+                      ...profile,
+                      isOnline: false
+                    };
+                  }
+                  return profile;
+                });
+                
+                return {
+                  ...currentBar,
+                  profiles: updatedProfiles
+                };
+              });
+            });
           }
-          
-          // Forçar uma sincronização para atualizar status
-          setTimeout(() => {
-            const presenceState = presenceChannel.presenceState();
-            console.log(`Estado de presença após join em ${bar.id}:`, presenceState);
-          }, 500);
-        })
-        .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-          console.log(`Presença removida do bar ${bar.id}:`, key, leftPresences);
-          
-          // Forçar uma sincronização após evento leave
-          setTimeout(() => {
-            const presenceState = presenceChannel.presenceState();
-            console.log(`Estado de presença após leave em ${bar.id}:`, presenceState);
-          }, 500);
         })
         .subscribe(async (status) => {
           console.log(`Status da inscrição no canal de presença para ${bar.id}:`, status);

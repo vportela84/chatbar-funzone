@@ -98,18 +98,38 @@ export const useProfileStateUpdates = () => {
         return prevBars;
       }
       
-      // Filtrar o perfil removido
-      const updatedProfiles = updatedBars[barIndex].profiles.filter(
-        profile => !(profile.name === removedProfile.name && 
-                   profile.tableId === removedProfile.table_id)
-      );
+      if (removedProfile.isOfflinePermanent) {
+        // Se o usuário saiu definitivamente, remover o perfil
+        console.log('Removendo permanentemente o perfil:', removedProfile.name);
+        const updatedProfiles = updatedBars[barIndex].profiles.filter(
+          profile => !(profile.name === removedProfile.name && 
+                     profile.tableId === removedProfile.table_id)
+        );
+        
+        updatedBars[barIndex] = {
+          ...updatedBars[barIndex],
+          profiles: updatedProfiles
+        };
+      } else {
+        // Apenas marcar como offline se não for remoção permanente
+        console.log('Marcando perfil como offline:', removedProfile.name);
+        const updatedProfiles = updatedBars[barIndex].profiles.map(profile => {
+          if (profile.name === removedProfile.name && profile.tableId === removedProfile.table_id) {
+            return {
+              ...profile,
+              isOnline: false
+            };
+          }
+          return profile;
+        });
+        
+        updatedBars[barIndex] = {
+          ...updatedBars[barIndex],
+          profiles: updatedProfiles
+        };
+      }
       
-      updatedBars[barIndex] = {
-        ...updatedBars[barIndex],
-        profiles: updatedProfiles
-      };
-      
-      console.log('Lista de bares após remoção:', updatedBars);
+      console.log('Lista de bares após remoção/offline:', updatedBars);
       return updatedBars;
     });
 

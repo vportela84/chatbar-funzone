@@ -64,22 +64,26 @@ export const useBarUsers = (barInfo: BarInfo | null, userId: string | null) => {
           const newState = presenceChannel.presenceState();
           console.log('Presence sync in bar users:', newState);
           
+          // Extract all presence objects from the state
+          const allPresences = Object.values(newState).flat();
+          
           // Update users with their online status based on explicit online field
           setConnectedUsers(currentUsers => {
             return currentUsers.map(user => {
-              // Para cada usuário, verifica se há informação de presença
-              const userPresences = Object.values(newState)
-                .flat()
-                .filter((presence: any) => presence.userId === user.id);
+              // Find user's presence objects
+              const userPresences = allPresences.filter(
+                (presence: any) => presence.userId === user.id
+              );
               
-              // Só marcar como offline se tiver presença explícita com online=false
-              // Se não tiver presença ou não tiver campo online=false, considerar online
-              const isExplicitlyOffline = userPresences.length > 0 && 
-                userPresences.some((presence: any) => presence.online === false);
+              // If we find a presence with online=false, mark as offline
+              const isExplicitlyOffline = userPresences.some(
+                (presence: any) => presence.online === false
+              );
               
+              // Only change to offline if explicitly marked
               return {
                 ...user,
-                online: !isExplicitlyOffline
+                online: isExplicitlyOffline ? false : user.online
               };
             });
           });
@@ -106,40 +110,9 @@ export const useBarUsers = (barInfo: BarInfo | null, userId: string | null) => {
                 description: `${offlinePresence.name || 'Alguém'} está offline agora`,
               });
             }
-          } else if (newPresences.length > 0) {
-            // Update users to online if they're in the presence list
-            const onlineUserIds = newPresences
-              .filter((presence: any) => presence.online !== false)
-              .map((presence: any) => presence.userId);
-            
-            if (onlineUserIds.length > 0) {
-              setConnectedUsers(currentUsers => 
-                currentUsers.map(user => 
-                  onlineUserIds.includes(user.id) 
-                    ? { ...user, online: true } 
-                    : user
-                )
-              );
-              
-              // Only show notification if it's not the current user
-              const newUserPresence = newPresences.find(
-                (presence: any) => presence.userId !== userId
-              );
-              
-              if (newUserPresence && newUserPresence.name) {
-                toast({
-                  title: "Usuário online",
-                  description: `${newUserPresence.name} está online agora`,
-                });
-              }
-            }
-          }
+          } 
         })
-        .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-          console.log('User left presence event:', key, leftPresences);
-          // We don't automatically mark users as offline on leave
-          // They are only marked offline if they explicitly set online=false
-        });
+        .subscribe();
       
       // Setup database changes channel for user profile updates
       const dbChannel = supabase
@@ -188,21 +161,9 @@ export const useBarUsers = (barInfo: BarInfo | null, userId: string | null) => {
               });
             }
           }
-          
-          // When a user updates their profile (UPDATE)
-          else if (payload.eventType === 'UPDATE') {
-            const updatedUser = payload.new as ConnectedUser;
-            setConnectedUsers(current => 
-              current.map(user => user.id === updatedUser.id ? 
-                { ...updatedUser, online: user.online } : // Preserve online status
-                user
-              )
-            );
-          }
         });
       
       // Subscribe to both channels
-      presenceChannel.subscribe();
       dbChannel.subscribe();
       
       // Clean up channels when component unmounts
