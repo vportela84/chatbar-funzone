@@ -95,17 +95,24 @@ export const useProfileData = () => {
       return;
     }
 
+    // Usar um callback funcional para garantir que estamos trabalhando com o estado mais recente
     setBars(prevBars => {
-      // Encontrar o bar correto
-      const barIndex = prevBars.findIndex(bar => bar.id === barId);
+      // Crie uma cópia do array de bares atual
+      const updatedBars = [...prevBars];
+      
+      // Encontrar o índice do bar
+      const barIndex = updatedBars.findIndex(bar => bar.id === barId);
       
       if (barIndex === -1) {
-        console.log(`Bar com ID ${barId} não encontrado na lista atual:`, prevBars);
+        console.log(`Bar com ID ${barId} não encontrado. Atualizando barIds disponíveis:`, 
+          updatedBars.map(b => b.id));
+        // Se o bar não existe no estado atual, recarregar todos os bares
+        loadBarsAndProfiles();
         return prevBars;
       }
       
       // Verificar se o perfil já existe
-      const profileExists = prevBars[barIndex].profiles.some(
+      const profileExists = updatedBars[barIndex].profiles.some(
         profile => profile.name === newProfile.name && profile.tableId === newProfile.table_id
       );
       
@@ -115,7 +122,7 @@ export const useProfileData = () => {
       }
       
       // Criar novo perfil
-      const newProfileObj = {
+      const newProfileObj: Profile = {
         name: newProfile.name,
         phone: newProfile.phone || '',
         tableId: newProfile.table_id,
@@ -126,9 +133,6 @@ export const useProfileData = () => {
       };
       
       console.log('Adicionando novo perfil ao bar:', newProfileObj);
-      
-      // Criar uma nova cópia do array de bares
-      const updatedBars = [...prevBars];
       
       // Atualizar o bar específico com o novo perfil
       updatedBars[barIndex] = {
@@ -158,16 +162,16 @@ export const useProfileData = () => {
     }
 
     setBars(prevBars => {
-      // Encontrar o bar correto
-      const barIndex = prevBars.findIndex(bar => bar.id === barId);
+      // Criar uma cópia do array de bares atual
+      const updatedBars = [...prevBars];
+      
+      // Encontrar o índice do bar
+      const barIndex = updatedBars.findIndex(bar => bar.id === barId);
       
       if (barIndex === -1) {
         console.log(`Bar com ID ${barId} não encontrado`);
         return prevBars;
       }
-      
-      // Criar uma nova cópia do array de bares
-      const updatedBars = [...prevBars];
       
       // Filtrar o perfil removido
       updatedBars[barIndex] = {
@@ -180,6 +184,11 @@ export const useProfileData = () => {
       
       console.log('Lista de bares após remoção:', updatedBars);
       return updatedBars;
+    });
+
+    toast({
+      title: "Cliente saiu",
+      description: `${removedProfile.name} saiu do bar.`,
     });
   };
 
@@ -195,7 +204,7 @@ export const useProfileData = () => {
         schema: 'public',
         table: 'bar_profiles'
       }, (payload) => {
-        console.log('Novo perfil detectado:', payload);
+        console.log('Novo perfil detectado via Supabase Realtime:', payload);
         updateBarsWithNewProfile(payload.new);
       })
       .on('postgres_changes', {
@@ -203,13 +212,16 @@ export const useProfileData = () => {
         schema: 'public',
         table: 'bar_profiles'
       }, (payload) => {
-        console.log('Perfil removido:', payload);
+        console.log('Perfil removido via Supabase Realtime:', payload);
         updateBarsWithRemovedProfile(payload.old);
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Status da inscrição do canal Supabase:', status);
+      });
 
     console.log('Canal de Supabase inscrito para atualizações em tempo real');
 
+    // Limpar canal ao desmontar o componente
     return () => {
       console.log('Limpando canal de Supabase');
       supabase.removeChannel(channel);
