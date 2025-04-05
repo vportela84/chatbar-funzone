@@ -17,38 +17,42 @@ export const useProfileActions = (barInfo: BarInfo | null, userId: string | null
     const presenceChannelName = `presence:bar:${barId}`;
     const presenceChannel = supabase.channel(presenceChannelName);
     
-    if (status === 'online') {
-      await presenceChannel.subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          // Track the user's presence when they join
-          const presenceTrackStatus = await presenceChannel.track({
-            userId,
-            name,
-            online: true,
-            lastSeen: new Date().toISOString()
-          });
-          console.log('Presence tracked as ONLINE:', presenceTrackStatus);
-        }
-      });
-    } else {
-      // Quando o usuário sai explicitamente, marcamos como offline antes de remover o canal
-      await presenceChannel.subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log(`Marking user ${userId} (${name}) as OFFLINE before leaving`);
-          const trackStatus = await presenceChannel.track({
-            userId,
-            name,
-            online: false,
-            lastSeen: new Date().toISOString()
-          });
-          console.log('User marked as offline, status:', trackStatus);
-          
-          // Aguarda um momento para garantir que a atualização foi processada
-          setTimeout(() => {
-            supabase.removeChannel(presenceChannel);
-          }, 1000);
-        }
-      });
+    try {
+      if (status === 'online') {
+        await presenceChannel.subscribe(async (status) => {
+          if (status === 'SUBSCRIBED') {
+            // Track the user's presence when they join
+            const presenceTrackStatus = await presenceChannel.track({
+              userId,
+              name,
+              online: true,
+              lastSeen: new Date().toISOString()
+            });
+            console.log('Presence tracked as ONLINE:', presenceTrackStatus);
+          }
+        });
+      } else {
+        // Quando o usuário sai explicitamente, marcamos como offline antes de remover o canal
+        await presenceChannel.subscribe(async (status) => {
+          if (status === 'SUBSCRIBED') {
+            console.log(`Marking user ${userId} (${name}) as OFFLINE before leaving`);
+            const trackStatus = await presenceChannel.track({
+              userId,
+              name,
+              online: false,
+              lastSeen: new Date().toISOString()
+            });
+            console.log('User marked as offline, status:', trackStatus);
+            
+            // Aguarda um momento para garantir que a atualização foi processada
+            setTimeout(() => {
+              supabase.removeChannel(presenceChannel);
+            }, 1000);
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error tracking presence:', error);
     }
   };
 
@@ -82,8 +86,21 @@ export const useProfileActions = (barInfo: BarInfo | null, userId: string | null
     try {
       if (!barInfo) {
         console.error('Informações do bar não disponíveis');
+        toast({
+          title: "Erro",
+          description: "Informações do bar não disponíveis",
+          variant: "destructive"
+        });
         return false;
       }
+      
+      console.log('Criando perfil com informações:', { 
+        nome: profile.name,
+        telefone: profile.phone ? '(presente)' : '(não informado)',
+        interesse: profile.interest,
+        barId: barInfo.barId,
+        mesa: barInfo.tableNumber
+      });
       
       // Verificar se já existe um perfil com este telefone neste bar
       let existingProfile = null;
@@ -91,6 +108,7 @@ export const useProfileActions = (barInfo: BarInfo | null, userId: string | null
       
       if (profile.phone) {
         existingProfile = await checkExistingProfile(profile.phone, barInfo.barId);
+        console.log('Resultado da verificação de perfil existente:', existingProfile ? 'Encontrado' : 'Não encontrado');
       }
       
       if (existingProfile) {
@@ -98,61 +116,89 @@ export const useProfileActions = (barInfo: BarInfo | null, userId: string | null
         newUserId = existingProfile.id;
         
         // Atualizar o perfil existente se necessário
-        const { error } = await supabase
-          .from('bar_profiles')
-          .update({
-            name: profile.name,
-            interest: profile.interest,
-            photo: profile.photo || existingProfile.photo
-          })
-          .eq('id', newUserId);
-        
-        if (error) {
-          console.error('Erro ao atualizar perfil existente:', error);
+        try {
+          const { error } = await supabase
+            .from('bar_profiles')
+            .update({
+              name: profile.name,
+              interest: profile.interest,
+              photo: profile.photo || existingProfile.photo
+            })
+            .eq('id', newUserId);
+          
+          if (error) {
+            console.error('Erro ao atualizar perfil existente:', error);
+            toast({
+              title: "Erro",
+              description: "Não foi possível atualizar seu perfil",
+              variant: "destructive"
+            });
+            return false;
+          }
+          
+          toast({
+            title: "Perfil recuperado",
+            description: "Seu perfil anterior foi recuperado",
+          });
+        } catch (error: any) {
+          console.error('Exceção ao atualizar perfil:', error.message);
           toast({
             title: "Erro",
-            description: "Não foi possível atualizar seu perfil",
+            description: "Erro ao atualizar perfil: " + (error.message || "Erro desconhecido"),
             variant: "destructive"
           });
           return false;
         }
-        
-        toast({
-          title: "Perfil recuperado",
-          description: "Seu perfil anterior foi recuperado",
-        });
       } else {
         // Generate unique user ID para novo perfil
         newUserId = crypto.randomUUID();
+        console.log('Novo ID de usuário gerado:', newUserId);
         
         // Salvar novo perfil no banco de dados
-        const { error } = await supabase.from('bar_profiles').insert({
-          id: newUserId,
-          name: profile.name,
-          phone: profile.phone || null,
-          photo: profile.photo || null,
-          interest: profile.interest,
-          bar_id: barInfo.barId,
-          table_id: barInfo.tableNumber
-        });
-        
-        if (error) {
-          console.error('Erro ao salvar perfil:', error);
+        try {
+          const profileData = {
+            id: newUserId,
+            name: profile.name,
+            phone: profile.phone || null,
+            photo: profile.photo || null,
+            interest: profile.interest,
+            bar_id: barInfo.barId,
+            table_id: barInfo.tableNumber
+          };
+          
+          console.log('Salvando novo perfil:', profileData);
+          
+          const { error } = await supabase
+            .from('bar_profiles')
+            .insert(profileData);
+          
+          if (error) {
+            console.error('Erro ao salvar perfil:', error);
+            toast({
+              title: "Erro",
+              description: "Não foi possível salvar seu perfil: " + (error.message || ''),
+              variant: "destructive"
+            });
+            return false;
+          }
+          
+          toast({
+            title: "Perfil criado!",
+            description: "Seu perfil foi criado com sucesso",
+          });
+        } catch (error: any) {
+          console.error('Exceção ao salvar novo perfil:', error.message);
           toast({
             title: "Erro",
-            description: "Não foi possível salvar seu perfil",
+            description: "Erro ao criar perfil: " + (error.message || "Erro desconhecido"),
             variant: "destructive"
           });
           return false;
         }
-        
-        toast({
-          title: "Perfil criado!",
-          description: "Seu perfil foi criado com sucesso",
-        });
       }
       
       // Save profile to sessionStorage
+      console.log('Salvando perfil na sessão local');
       sessionStorage.setItem('userProfile', JSON.stringify(profile));
       sessionStorage.setItem('userId', newUserId);
       
@@ -160,15 +206,21 @@ export const useProfileActions = (barInfo: BarInfo | null, userId: string | null
       
       // Start tracking presence
       if (barInfo) {
-        trackPresence(barInfo.barId, newUserId, profile.name, 'online');
+        console.log('Iniciando rastreamento de presença');
+        try {
+          await trackPresence(barInfo.barId, newUserId, profile.name, 'online');
+        } catch (error) {
+          console.error('Erro ao iniciar rastreamento de presença:', error);
+          // Continue anyway, não é crítico
+        }
       }
       
       return true;
-    } catch (error) {
-      console.error('Erro:', error);
+    } catch (error: any) {
+      console.error('Erro geral na criação do perfil:', error);
       toast({
         title: "Erro",
-        description: "Ocorreu um erro inesperado",
+        description: "Ocorreu um erro inesperado: " + (error?.message || "Desconhecido"),
         variant: "destructive"
       });
       return false;

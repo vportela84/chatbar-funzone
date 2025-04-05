@@ -140,6 +140,54 @@ export type Database = {
         }
         Relationships: []
       }
+      budgets: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          type: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           bar_id: string
@@ -259,6 +307,39 @@ export type Database = {
           updated_at?: string
           username?: string | null
           wins?: number | null
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          date: string
+          description: string
+          id: string
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string
+          date: string
+          description: string
+          id?: string
+          type: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          date?: string
+          description?: string
+          id?: string
+          type?: string
+          user_id?: string | null
         }
         Relationships: []
       }

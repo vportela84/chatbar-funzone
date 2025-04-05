@@ -19,19 +19,71 @@ const ProfileSetup = ({ onComplete, barInfo }: ProfileSetupProps) => {
   const [phone, setPhone] = useState("");
   const [photo, setPhoto] = useState<string | null>(null);
   const [interest, setInterest] = useState("all");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  const handleProfileSubmit = (e: React.FormEvent) => {
+  const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) {
+    
+    try {
+      if (!name.trim()) {
+        toast({
+          title: "Nome obrigatório",
+          description: "Por favor, digite seu nome ou apelido",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Prevenir múltiplos envios
+      if (isSubmitting) {
+        return;
+      }
+      
+      setIsSubmitting(true);
+      console.log("ProfileSetup: Enviando dados do perfil", { name, phone, interest });
+      
+      // Verificar conexão com Supabase (apenas para diagnóstico)
+      try {
+        const { data, error } = await supabase.from('bars').select('count').limit(1);
+        if (error) {
+          console.warn('Possível problema de conectividade com Supabase:', error);
+        } else {
+          console.log('Conexão com Supabase OK');
+        }
+      } catch (connError) {
+        console.error('Erro ao verificar conexão com Supabase:', connError);
+      }
+      
+      // Normalizar o número de telefone (remover caracteres não numéricos)
+      const normalizedPhone = phone.trim().replace(/\D/g, '');
+      
+      // Aqui estamos chamando onComplete
+      await onComplete({ 
+        name: name.trim(), 
+        phone: normalizedPhone,
+        photo: photo || undefined, 
+        interest 
+      });
+      
+    } catch (error) {
+      console.error("Erro ao enviar perfil:", error);
       toast({
-        title: "Nome obrigatório",
-        description: "Por favor, digite seu nome ou apelido",
+        title: "Erro",
+        description: "Houve um erro ao enviar seu perfil. Por favor, tente novamente.",
         variant: "destructive",
       });
-      return;
+    } finally {
+      setIsSubmitting(false);
     }
-    onComplete({ name, phone, photo: photo || undefined, interest });
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Limitar o tamanho máximo do telefone
+    const value = e.target.value;
+    if (value.length <= 15) {
+      setPhone(value);
+    }
   };
 
   return (
@@ -64,9 +116,26 @@ const ProfileSetup = ({ onComplete, barInfo }: ProfileSetupProps) => {
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) {
+                // Verificar tamanho do arquivo (limite de 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                  toast({
+                    title: "Arquivo muito grande",
+                    description: "Por favor, escolha uma imagem com menos de 5MB",
+                    variant: "destructive"
+                  });
+                  return;
+                }
+                
                 const reader = new FileReader();
                 reader.onloadend = () => {
                   setPhoto(reader.result as string);
+                };
+                reader.onerror = () => {
+                  toast({
+                    title: "Erro",
+                    description: "Não foi possível carregar a imagem",
+                    variant: "destructive"
+                  });
                 };
                 reader.readAsDataURL(file);
               }
@@ -85,6 +154,7 @@ const ProfileSetup = ({ onComplete, barInfo }: ProfileSetupProps) => {
             onChange={(e) => setName(e.target.value)}
             className="bg-black/20 border-primary/20 text-white"
             placeholder="Digite seu nome"
+            maxLength={50}
           />
         </div>
 
@@ -93,7 +163,7 @@ const ProfileSetup = ({ onComplete, barInfo }: ProfileSetupProps) => {
           <Input
             id="phone"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={handlePhoneChange}
             className="bg-black/20 border-primary/20 text-white"
             placeholder="Digite seu número de telefone"
           />
@@ -125,8 +195,9 @@ const ProfileSetup = ({ onComplete, barInfo }: ProfileSetupProps) => {
       <Button 
         type="submit"
         className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+        disabled={isSubmitting}
       >
-        Começar a Conversar
+        {isSubmitting ? "Processando..." : "Começar a Conversar"}
       </Button>
     </form>
   );
